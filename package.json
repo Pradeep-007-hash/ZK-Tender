@@ -1,0 +1,22 @@
+{
+  "name": "zk-tender",
+  "version": "1.0.0",
+  "description": "ZK-Tender Smart Contracts and Application Workspace",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.29.1"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "mongoose": "^9.9.3"
+  }
+}
