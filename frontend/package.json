@@ -9,12 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@noble/post-quantum": "^0.7.0",
     "@react-oauth/google": "^0.13.5",
     "ethers": "^6.17.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.428.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "snarkjs": "^0.7.6"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

@@ -98,7 +98,7 @@ export default function App() {
     const finalUser = {
       ...userObj,
       role: isAuthority ? 'AUTHORITY' : (userObj.role || 'VENDOR'),
-      organizationId: isAuthority ? (userObj.organizationId || 'GOV001') : (userObj.organizationId || 'ORG001')
+      organizationId: isAuthority ? (userObj.organizationId || 'GOV001') : ((userObj.organizationId && userObj.organizationId !== 'ORG001') ? userObj.organizationId : '')
     };
 
     const targetView = isAuthority ? 'authority-dashboard' : 'dashboard';

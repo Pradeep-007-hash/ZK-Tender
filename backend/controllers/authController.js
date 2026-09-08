@@ -178,7 +178,7 @@ exports.register = async (req, res) => {
       email: cleanEmail,
       password: hashedPassword,
       role: role || "VENDOR",
-      organizationId: organizationId || "ORG001"
+      organizationId: organizationId || ""
     });
 
     await newUser.save();
@@ -262,7 +262,7 @@ exports.oauthLogin = async (req, res) => {
         gstNo: "",
         address: "",
         role: "VENDOR",
-        organizationId: "ORG001"
+        organizationId: ""
       });
 
       await user.save();

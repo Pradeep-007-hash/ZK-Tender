@@ -208,7 +208,7 @@ export default function LoginPage({ onBack, onLoginSuccess, onForgotPassword }) 
       if (data.user) {
         userObj.name = data.user.name || userObj.name;
         userObj.role = data.user.role || (email.toLowerCase().includes('officer') ? 'AUTHORITY' : 'VENDOR');
-        userObj.organizationId = data.user.organizationId || 'ORG001';
+        userObj.organizationId = (data.user.organizationId && data.user.organizationId !== 'ORG001') ? data.user.organizationId : '';
         userObj.company = data.user.company || userObj.company;
         userObj.phone = data.user.phone || userObj.phone;
         userObj.gstNo = data.user.gstNo;

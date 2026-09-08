@@ -1,7 +1,14 @@
 const Tender = require("../models/Tender");
 const VendorBid = require("../models/VendorBid");
+const VendorEligibility = require("../models/VendorEligibility");
 const { registerTenderOnChain } = require("../services/blockchainService");
 const { evaluateVendorBid, generateCriteriaHash, generateZKPProof } = require("../services/zkpEvaluationEngine");
+const {
+  generateEligibilityPolicyHash,
+  getTenderEligibilityCriteria,
+  generateEligibilityProof,
+  verifyEligibilityProof
+} = require("../services/zkpEligibilityEngine");
 
 // Helper to extract or construct a clean evaluationPolicy from a Tender document
 function getTenderPolicy(tender) {
@@ -298,7 +305,101 @@ exports.verifyProof = async (req, res) => {
   }
 };
 
-// 8. POST /api/tenders/:tenderId/bids — Submit Vendor Bid
+// 8. GET /api/tenders/:tenderId/eligibility — Fetch Tender Eligibility Policy
+exports.getTenderEligibilityPolicy = async (req, res) => {
+  try {
+    const { tenderId } = req.params;
+    const tender = await Tender.findOne({ tenderId });
+    if (!tender) {
+      return res.status(404).json({ success: false, message: "Tender not found" });
+    }
+    const criteria = getTenderEligibilityCriteria(tender);
+    return res.status(200).json({
+      success: true,
+      tenderId,
+      eligibilityCriteria: criteria
+    });
+  } catch (error) {
+    console.error("[GET ELIGIBILITY POLICY ERROR]", error);
+    return res.status(500).json({ success: false, message: "Server error fetching tender eligibility policy." });
+  }
+};
+
+// 9. POST /api/tenders/:tenderId/eligibility/prove — Generate Eligibility ZKP Proof
+exports.proveEligibility = async (req, res) => {
+  try {
+    const { tenderId } = req.params;
+    const { vendorId, experience, turnover, projects } = req.body;
+
+    const tender = await Tender.findOne({ tenderId });
+    if (!tender) {
+      return res.status(404).json({ success: false, message: "Tender not found" });
+    }
+
+    const publicReqs = getTenderEligibilityCriteria(tender);
+    const privateWitness = { experience, turnover, projects };
+    const zkpResult = generateEligibilityProof(tenderId, vendorId || "VEN-001", privateWitness, publicReqs);
+
+    return res.status(200).json({
+      success: true,
+      tenderId,
+      policyHash: zkpResult.policyHash,
+      eligible: zkpResult.eligible,
+      proofValid: zkpResult.proofValid,
+      proof: zkpResult.proof,
+      publicSignals: zkpResult.publicSignals
+    });
+  } catch (error) {
+    console.error("[PROVE ELIGIBILITY ERROR]", error);
+    return res.status(500).json({ success: false, message: "Error generating ZKP eligibility proof." });
+  }
+};
+
+// 10. POST /api/tenders/:tenderId/eligibility/verify — Verify Eligibility ZKP Proof
+exports.verifyEligibility = async (req, res) => {
+  try {
+    const { tenderId } = req.params;
+    const { vendorId, proof, publicSignals } = req.body;
+
+    const tender = await Tender.findOne({ tenderId });
+    if (!tender) {
+      return res.status(404).json({ success: false, message: "Tender not found" });
+    }
+
+    const tenderReqs = getTenderEligibilityCriteria(tender);
+    const verification = verifyEligibilityProof(proof, publicSignals, tenderReqs);
+
+    if (verification.verified && verification.eligible) {
+      const vId = vendorId || publicSignals?.vendorId || "VEN-001";
+      await VendorEligibility.findOneAndUpdate(
+        { tenderId, vendorId: vId, policyHash: tenderReqs.policyHash },
+        {
+          vendorId: vId,
+          tenderId,
+          policyHash: tenderReqs.policyHash,
+          proof,
+          publicSignals,
+          verified: true,
+          verifiedAt: new Date()
+        },
+        { upsert: true, new: true }
+      );
+    }
+
+    return res.status(200).json({
+      eligible: verification.eligible,
+      verified: verification.verified,
+      tenderId,
+      policyHash: tenderReqs.policyHash,
+      message: verification.message
+    });
+  } catch (error) {
+    console.error("[VERIFY ELIGIBILITY ERROR]", error);
+    return res.status(500).json({ success: false, message: "Error verifying eligibility ZKP proof." });
+  }
+};
+
+// 11. POST /api/tenders/:tenderId/bids — Submit Vendor Bid
 exports.submitVendorBid = async (req, res) => {
   try {
     const { tenderId } = req.params;
@@ -311,6 +412,22 @@ exports.submitVendorBid = async (req, res) => {
     const tender = await Tender.findOne({ tenderId });
     if (!tender) {
       return res.status(404).json({ success: false, message: "Tender not found" });
+    }
+
+    // REQUIREMENT 14: Enforce that vendor has successfully completed eligibility ZKP verification
+    const tenderReqs = getTenderEligibilityCriteria(tender);
+    const eligibilityRecord = await VendorEligibility.findOne({
+      tenderId,
+      vendorId,
+      policyHash: tenderReqs.policyHash,
+      verified: true
+    });
+
+    if (!eligibilityRecord) {
+      return res.status(403).json({
+        success: false,
+        message: "Bid Rejected: Vendor has not successfully completed Zero-Knowledge Eligibility Verification for this tender."
+      });
     }
 
     const policy = getTenderPolicy(tender);

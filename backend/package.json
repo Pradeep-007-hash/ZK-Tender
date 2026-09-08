@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@noble/post-quantum": "^0.7.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "crypto": "^1.0.1",
@@ -18,6 +19,7 @@
     "express": "^5.2.1",
     "googleapis": "^174.0.1",
     "mongoose": "^9.9.3",
-    "nodemailer": "^9.0.5"
+    "nodemailer": "^9.0.5",
+    "snarkjs": "^0.7.6"
   }
 }

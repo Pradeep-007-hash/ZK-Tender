@@ -16,6 +16,7 @@
     "hardhat": "^2.29.1"
   },
   "dependencies": {
+    "@noble/post-quantum": "^0.7.0",
     "dotenv": "^17.4.2",
     "mongoose": "^9.9.3"
   }

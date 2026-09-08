@@ -177,11 +177,12 @@ export default function VendorBidPage({ targetTender, vendorId = 'VEN-001', vend
         setIsSubmitted(true);
         if (onToast) onToast('Electronic Bid Successfully Encrypted & Registered!', 'success');
         if (onBidSuccess) onBidSuccess(data.bid);
+      } else {
+        if (onToast) onToast(data.message || 'Bid submission failed: Eligibility verification required', 'error');
       }
     } catch (err) {
       console.warn('[BID SUBMISSION NOTICE]', err.message);
-      setIsSubmitted(true);
-      if (onToast) onToast('Electronic Bid Successfully Registered!', 'success');
+      if (onToast) onToast('Bid submission failed: ' + err.message, 'error');
     }
   };
 

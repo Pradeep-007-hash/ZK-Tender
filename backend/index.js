@@ -7,7 +7,7 @@ const { google } = require('googleapis');
 const connectDB = require('./db');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB Atlas Database
 connectDB();
@@ -15,9 +15,19 @@ connectDB();
 const authRoutes = require('./routes/authRoutes');
 const organizationRoutes = require('./routes/organizationRoutes');
 const tenderRoutes = require('./routes/tenderRoutes');
+const pqcRoutes = require('./routes/pqcRoutes');
+const pqcMldsaRoutes = require('./routes/pqcMldsaRoutes');
+const evaluationRoutes = require('./routes/evaluationRoutes');
 
 app.use(cors());
 app.use(express.json());
+
+// Post-Quantum Cryptography (PQC ML-KEM-768 & ML-DSA-65) Routes
+app.use('/api', pqcMldsaRoutes);
+app.use('/api/pqc', pqcRoutes);
+
+// Bid Evaluation Routes (AHP + Min-Max + WSM + Ranking)
+app.use('/api/tenders', evaluationRoutes);
 
 // Auth & Password Reset Routes
 app.use('/api/auth', authRoutes);

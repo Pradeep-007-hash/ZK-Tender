@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import WalletConnectButton from './WalletConnectButton';
 import VendorBidPage from './VendorBidPage';
+import EligibilityModal from './EligibilityModal';
+import EvaluationDashboard from './EvaluationDashboard';
 
 const indianStatesAndDistricts = {
   "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Kakinada", "Tirupati", "Anantapur", "Other"],
@@ -53,13 +55,13 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
     if (mainContentRef.current) {
       mainContentRef.current.scrollTop = 0;
     }
-    const targetUrl = activeTab === 'settings' 
-      ? '/vendor/settings' 
-      : activeTab === 'company-profile' 
-      ? '/vendor/profile' 
-      : activeTab === 'bidding-my-bids'
-      ? '/vendor/bids'
-      : '/vendor/dashboard';
+    const targetUrl = activeTab === 'settings'
+      ? '/vendor/settings'
+      : activeTab === 'company-profile'
+        ? '/vendor/profile'
+        : activeTab === 'bidding-my-bids'
+          ? '/vendor/bids'
+          : '/vendor/dashboard';
     if (window.location.pathname !== targetUrl) {
       window.history.replaceState(null, '', targetUrl);
     }
@@ -69,12 +71,14 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [lightTheme, setLightTheme] = useState(true);
   const [notifFlyoutOpen, setNotifFlyoutOpen] = useState(false);
-  
+
   // Data State - Loaded live from MongoDB Database
   const [tenders, setTenders] = useState([]);
   const [myBids, setMyBids] = useState([]);
   const [myBidsFilter, setMyBidsFilter] = useState('ALL');
   const [selectedTender, setSelectedTender] = useState(null);
+  const [eligibilityModalOpen, setEligibilityModalOpen] = useState(false);
+  const [verifiedEligibilityTenders, setVerifiedEligibilityTenders] = useState({});
 
   // Fetch Tenders from Database API on mount (Only Published On-Chain Tenders Visible to Vendors)
   useEffect(() => {
@@ -154,7 +158,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
   const [profileGst, setProfileGst] = useState(currentUser?.gstNo || '');
   const [profileAddress, setProfileAddress] = useState(currentUser?.address || '');
   const [profileRole, setProfileRole] = useState(currentUser?.role || 'VENDOR');
-  const [profileOrgId, setProfileOrgId] = useState(currentUser?.organizationId || 'ORG001');
+  const [profileOrgId, setProfileOrgId] = useState(currentUser?.organizationId && currentUser.organizationId !== 'ORG001' ? currentUser.organizationId : '');
   const [profileSaving, setProfileSaving] = useState(false);
 
   // Settings & Notification State
@@ -298,7 +302,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
   const handleToggleNotifications = () => {
     const nextVal = !notificationsEnabled;
     setNotificationsEnabled(nextVal);
-    
+
     if (nextVal) {
       // Request Browser Push Notification Permission if available
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
@@ -444,7 +448,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
     // CIN validation if Private/Public Limited
     if (
-      (orgData.organizationType === 'Private Limited' || orgData.organizationType === 'Public Limited') && 
+      (orgData.organizationType === 'Private Limited' || orgData.organizationType === 'Public Limited') &&
       !orgData.cinNumber
     ) {
       triggerToast('CIN Number is required for Private Limited and Public Limited organizations.', 'error');
@@ -538,8 +542,16 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
     }
   };
 
-  const vendorName = orgData.companyName || profileName || currentUser?.name || 'ABC Technologies Pvt. Ltd.';
-  const vendorId = orgData.organizationId || profileOrgId || 'VEN-10293';
+  const getVendorInitials = (name) => {
+    if (!name) return 'VN';
+    const parts = name.trim().split(' ').filter(Boolean);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+  };
+
+  const vendorName = orgData.companyName || profileName || currentUser?.company || currentUser?.name || 'Registered Vendor';
+  const rawVendorId = orgData.organizationId || profileOrgId || currentUser?.organizationId || currentUser?.vendorId || '';
+  const vendorId = rawVendorId && rawVendorId !== 'ORG001' ? rawVendorId : '';
 
   // Titles mapping
   const titlesMap = {
@@ -581,9 +593,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
     const matchTenderType = filterTenderType === 'ALL' || t.tenderType === filterTenderType;
     const matchProcurement = filterProcurement === 'ALL' || t.procurementMethod === filterProcurement;
     const matchStatus = filterStatus === 'ALL' || (t.status && t.status.toLowerCase().includes(filterStatus.toLowerCase()));
-    const matchSearch = !globalSearch || 
-      t.id.toLowerCase().includes(globalSearch.toLowerCase()) || 
-      t.title.toLowerCase().includes(globalSearch.toLowerCase()) || 
+    const matchSearch = !globalSearch ||
+      t.id.toLowerCase().includes(globalSearch.toLowerCase()) ||
+      t.title.toLowerCase().includes(globalSearch.toLowerCase()) ||
       t.organization.toLowerCase().includes(globalSearch.toLowerCase());
     return matchCat && matchBudget && matchOrg && matchElig && matchTenderType && matchProcurement && matchStatus && matchSearch;
   });
@@ -606,12 +618,19 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
   };
 
   const handleApplyTender = (tender) => {
-    setSelectedTender(tender);
-    setWizardStep(1);
-    setWizardSuccess(false);
-    setWizardProgress(0);
-    setDeclarationChecked(false);
-    handleSwitchTab('bidding-submit');
+    const target = tender || selectedTender || tenders[0];
+    setSelectedTender(target);
+    const tId = target?.id || target?.tenderId || 'T001';
+
+    if (verifiedEligibilityTenders[tId]?.verified) {
+      setWizardStep(1);
+      setWizardSuccess(false);
+      setWizardProgress(0);
+      setDeclarationChecked(false);
+      handleSwitchTab('bidding-submit');
+    } else {
+      setEligibilityModalOpen(true);
+    }
   };
 
   // Wizard Stepper
@@ -675,46 +694,28 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
   return (
     <div className={`min-h-screen ${lightTheme ? 'light-theme bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-200'} font-sans antialiased`}>
       <div className="min-h-full flex flex-col md:flex-row">
-        
+
         {/* LEFT SIDEBAR */}
-        <aside 
+        <aside
           className={`w-full ${sidebarCollapsed ? 'md:w-20' : 'md:w-64'} bg-slate-900/95 border-r border-slate-800/90 text-slate-300 flex-shrink-0 flex flex-col justify-between transition-all duration-300 z-40 shadow-2xl backdrop-blur-md ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} fixed md:sticky md:top-0 h-screen self-start`}
         >
           <div className="flex flex-col h-full overflow-y-auto">
-            
+
             {/* Sidebar Header / Logo */}
             <div className="px-4 py-4 flex items-center justify-between border-b border-slate-800/80 sticky top-0 bg-slate-900/95 backdrop-blur z-10">
               <div className="flex items-center space-x-3 logo-hover-wrapper cursor-pointer">
-                
-                {/* LOGO ICON & TOGGLE WRAPPER */}
-                <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
-                  {/* SHIELD LOGO (shown when NOT hovering) */}
-                  <div className="logo-shield-icon w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-600 via-emerald-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
-                    <i className="fa-solid fa-shield-halved text-base"></i>
-                  </div>
 
-                  {/* ANIMATED TOGGLE BUTTON (shown ON HOVER) */}
-                  <div className="toggle-button-wrapper absolute inset-0 flex items-center justify-center">
-                    <input 
-                      id="checkbox" 
-                      type="checkbox" 
-                      checked={sidebarCollapsed} 
-                      onChange={() => setSidebarCollapsed(!sidebarCollapsed)} 
-                    />
-                    <label className="toggle" htmlFor="checkbox" title="Toggle Sidebar">
-                      <div id="bar1" className="bars"></div>
-                      <div id="bar2" className="bars"></div>
-                      <div id="bar3" className="bars"></div>
-                    </label>
+                {/* LOGO ICON */}
+                <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-600 via-emerald-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
+                    <i className="fa-solid fa-shield-halved text-base"></i>
                   </div>
                 </div>
 
-                {!sidebarCollapsed && (
-                  <div onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
-                    <span className="font-bold text-lg text-white tracking-tight">ZK-<span className="text-teal-400">Tenders</span></span>
-                    <span className="block text-[9px] font-mono text-teal-400 uppercase tracking-widest">Vendor Portal</span>
-                  </div>
-                )}
+                <div>
+                  <span className="font-bold text-lg text-white tracking-tight">ZK-<span className="text-teal-400">Tenders</span></span>
+                  <span className="block text-[9px] font-mono text-teal-400 uppercase tracking-widest">Vendor Portal</span>
+                </div>
               </div>
               <button onClick={() => setMobileSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white p-1">
                 <i className="fa-solid fa-xmark text-lg"></i>
@@ -727,13 +728,13 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                 <div className="flex items-center space-x-3">
                   <div className="relative shrink-0">
                     <div className="w-9 h-9 rounded-lg bg-teal-950 border border-teal-500/40 flex items-center justify-center text-teal-400 font-mono text-xs font-bold">
-                      ABC
+                      {getVendorInitials(vendorName)}
                     </div>
                     <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-900 rounded-full" title="Groth16 Prover Online"></span>
                   </div>
                   <div className="overflow-hidden">
                     <h4 className="font-semibold text-xs text-white truncate" title={vendorName}>{vendorName}</h4>
-                    <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5">ID: <span className="text-teal-400">{vendorId}</span></p>
+                    <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5">{vendorId ? <>ID: <span className="text-teal-400">{vendorId}</span></> : <span className="text-teal-400/80">Verified Vendor Account</span>}</p>
                     <div className="mt-1 flex items-center space-x-1">
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono bg-teal-500/10 text-teal-400 border border-teal-500/20">
                         <i className="fa-solid fa-lock mr-1 text-[7px]"></i> ZK Prover Active
@@ -746,10 +747,10 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
             {/* NAVIGATION TREE */}
             <nav className="px-3 space-y-1 text-xs font-medium flex-1 pb-4">
-              
+
               {/* Dashboard */}
-              <button 
-                onClick={() => handleSwitchTab('dashboard')} 
+              <button
+                onClick={() => handleSwitchTab('dashboard')}
                 className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2.5 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-teal-600 text-white font-semibold shadow-md shadow-teal-600/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
               >
                 <i className="fa-solid fa-chart-pie w-4 text-center shrink-0"></i>
@@ -757,8 +758,8 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               </button>
 
               {/* Organization Profile */}
-              <button 
-                onClick={() => handleSwitchTab('org-profile')} 
+              <button
+                onClick={() => handleSwitchTab('org-profile')}
                 className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${activeTab === 'org-profile' ? 'bg-teal-600 text-white font-semibold shadow-md shadow-teal-600/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
               >
                 <div className="flex items-center space-x-2.5">
@@ -776,8 +777,8 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               <div className="pt-2">
                 {!sidebarCollapsed && <div className="px-3 pb-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Tenders</div>}
                 <div className="space-y-0.5">
-                  <button 
-                    onClick={() => handleSwitchTab('tenders-available')} 
+                  <button
+                    onClick={() => handleSwitchTab('tenders-available')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${activeTab === 'tenders-available' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <div className="flex items-center space-x-2.5">
@@ -787,8 +788,8 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     {!sidebarCollapsed && <span className="bg-teal-500/20 text-teal-300 font-mono text-[9px] px-1.5 py-0.5 rounded-full font-bold">6 Live</span>}
                   </button>
 
-                  <button 
-                    onClick={() => handleSwitchTab('tenders-applied')} 
+                  <button
+                    onClick={() => handleSwitchTab('tenders-applied')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${activeTab === 'tenders-applied' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <div className="flex items-center space-x-2.5">
@@ -804,16 +805,16 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               <div className="pt-2">
                 {!sidebarCollapsed && <div className="px-3 pb-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Bidding</div>}
                 <div className="space-y-0.5">
-                  <button 
-                    onClick={() => handleSwitchTab('bidding-submit')} 
+                  <button
+                    onClick={() => handleSwitchTab('bidding-submit')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'bidding-submit' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <i className="fa-solid fa-paper-plane w-4 text-center text-teal-400 shrink-0"></i>
                     {!sidebarCollapsed && <span className="text-teal-300 font-semibold">Submit Bid</span>}
                   </button>
 
-                  <button 
-                    onClick={() => handleSwitchTab('bidding-drafts')} 
+                  <button
+                    onClick={() => handleSwitchTab('bidding-drafts')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${activeTab === 'bidding-drafts' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <div className="flex items-center space-x-2.5">
@@ -823,8 +824,8 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     {!sidebarCollapsed && <span className="bg-amber-500/20 text-amber-300 font-mono text-[9px] px-1.5 py-0.5 rounded-full">1</span>}
                   </button>
 
-                  <button 
-                    onClick={() => handleSwitchTab('bidding-my-bids')} 
+                  <button
+                    onClick={() => handleSwitchTab('bidding-my-bids')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${activeTab === 'bidding-my-bids' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <div className="flex items-center space-x-2.5">
@@ -840,16 +841,16 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               <div className="pt-2">
                 {!sidebarCollapsed && <div className="px-3 pb-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Zero-Knowledge Proofs</div>}
                 <div className="space-y-0.5">
-                  <button 
-                    onClick={() => handleSwitchTab('zkp-generate')} 
+                  <button
+                    onClick={() => handleSwitchTab('zkp-generate')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'zkp-generate' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <i className="fa-solid fa-microchip w-4 text-center text-blue-400 shrink-0"></i>
                     {!sidebarCollapsed && <span>Generate ZKP</span>}
                   </button>
 
-                  <button 
-                    onClick={() => handleSwitchTab('zkp-my-proofs')} 
+                  <button
+                    onClick={() => handleSwitchTab('zkp-my-proofs')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${activeTab === 'zkp-my-proofs' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <div className="flex items-center space-x-2.5">
@@ -859,8 +860,8 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     {!sidebarCollapsed && <span className="bg-indigo-500/20 text-indigo-300 font-mono text-[9px] px-1.5 py-0.5 rounded-full font-bold">6</span>}
                   </button>
 
-                  <button 
-                    onClick={() => handleSwitchTab('zkp-verification')} 
+                  <button
+                    onClick={() => handleSwitchTab('zkp-verification')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'zkp-verification' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <i className="fa-solid fa-shield-check w-4 text-center shrink-0"></i>
@@ -873,16 +874,16 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               <div className="pt-2">
                 {!sidebarCollapsed && <div className="px-3 pb-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Evaluation</div>}
                 <div className="space-y-0.5">
-                  <button 
-                    onClick={() => handleSwitchTab('eval-bid-status')} 
+                  <button
+                    onClick={() => handleSwitchTab('eval-bid-status')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'eval-bid-status' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <i className="fa-solid fa-timeline w-4 text-center shrink-0"></i>
                     {!sidebarCollapsed && <span>Bid Status</span>}
                   </button>
 
-                  <button 
-                    onClick={() => handleSwitchTab('eval-results')} 
+                  <button
+                    onClick={() => handleSwitchTab('eval-results')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'eval-results' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <i className="fa-solid fa-award w-4 text-center text-amber-400 shrink-0"></i>
@@ -895,16 +896,16 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               <div className="pt-2">
                 {!sidebarCollapsed && <div className="px-3 pb-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Account</div>}
                 <div className="space-y-0.5">
-                  <button 
-                    onClick={() => handleSwitchTab('company-profile')} 
+                  <button
+                    onClick={() => handleSwitchTab('company-profile')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'company-profile' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <i className="fa-solid fa-building w-4 text-center shrink-0"></i>
                     {!sidebarCollapsed && <span>Company Profile</span>}
                   </button>
 
-                  <button 
-                    onClick={() => handleSwitchTab('settings')} 
+                  <button
+                    onClick={() => handleSwitchTab('settings')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'settings' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <i className="fa-solid fa-gear w-4 text-center shrink-0"></i>
@@ -916,8 +917,8 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
             {/* Sidebar Footer */}
             <div className="p-3 border-t border-slate-800/80 bg-slate-950/60 space-y-1 text-xs">
-              <button 
-                onClick={handleLogoutClick} 
+              <button
+                onClick={handleLogoutClick}
                 className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10 transition font-semibold"
                 title="Log Out of Account"
               >
@@ -931,7 +932,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
         {/* MAIN CONTENT CONTAINER */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          
+
           {/* TOP NAVIGATION BAR */}
           <header className="bg-slate-900/90 border-b border-slate-800 px-4 py-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md">
             <div className="flex items-center space-x-3">
@@ -948,14 +949,14 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
             <div className="hidden lg:block max-w-sm w-full mx-4">
               <div className="relative">
                 <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={globalSearch}
                   onChange={(e) => {
                     setGlobalSearch(e.target.value);
                     if (activeTab !== 'tenders-available') setActiveTab('tenders-available');
                   }}
-                  placeholder="Search by tender ID, title or organization..." 
+                  placeholder="Search by tender ID, title or organization..."
                   className="w-full pl-9 pr-4 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-teal-500 transition font-mono"
                 />
               </div>
@@ -965,19 +966,18 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
             <div className="flex items-center space-x-2 sm:space-x-3">
               {/* Web3 Connect Wallet Button */}
               <WalletConnectButton user={currentUser} onToast={onToast} lightTheme={lightTheme} />
-              
+
               <div className="hidden xl:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-teal-950 border border-teal-500/30 text-[10px] font-mono text-teal-300">
                 <i className="fa-solid fa-lock text-teal-400"></i>
                 <span>🔐 End-to-End ZK Protected</span>
               </div>
 
-              <button 
-                onClick={() => setLightTheme(!lightTheme)} 
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 border shadow-sm ${
-                  lightTheme 
-                    ? 'bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20' 
+              <button
+                onClick={() => setLightTheme(!lightTheme)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 border shadow-sm ${lightTheme
+                    ? 'bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20'
                     : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white'
-                }`}
+                  }`}
                 title={lightTheme ? "Switch to Dark Theme" : "Switch to Light Theme"}
               >
                 <i className={`fa-solid ${lightTheme ? 'fa-sun text-amber-500' : 'fa-moon text-indigo-400'} text-sm transition-transform duration-300 ${lightTheme ? 'rotate-180' : ''}`}></i>
@@ -1018,12 +1018,12 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     ) : (
                       <div className="max-h-80 overflow-y-auto divide-y divide-slate-800/60 text-xs">
                         {notificationsList.map(notif => (
-                          <div 
+                          <div
                             key={notif.id}
                             onClick={() => {
                               if (notif.tabLink) handleSwitchTab(notif.tabLink);
                               setNotificationsList(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
-                            }} 
+                            }}
                             className={`p-3 hover:bg-slate-800/50 transition cursor-pointer ${!notif.read ? 'bg-slate-950/40' : ''}`}
                           >
                             <div className="flex items-start space-x-2.5">
@@ -1046,11 +1046,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               <div className="relative flex items-center space-x-2 border-l border-slate-800 pl-3">
                 <button onClick={() => handleSwitchTab('company-profile')} className="flex items-center space-x-2 focus:outline-none group">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-teal-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow">
-                    ABC
+                    {getVendorInitials(vendorName)}
                   </div>
                   <div className="hidden sm:block text-left">
-                    <span className="block text-xs font-semibold text-white group-hover:text-teal-400 transition truncate max-w-[120px]">ABC Tech</span>
-                    <span className="block text-[9px] text-slate-400 font-mono">{vendorId}</span>
+                    <span className="block text-xs font-semibold text-white group-hover:text-teal-400 transition truncate max-w-[120px]">{vendorName}</span>
+                    <span className="block text-[9px] text-slate-400 font-mono">{vendorId || 'Verified Prover'}</span>
                   </div>
                 </button>
               </div>
@@ -1076,7 +1076,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     <p className="text-xs text-slate-400 mt-0.5">Prove eligibility & financial credentials without revealing sensitive private balance sheets to evaluators.</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-1 sm:space-x-2 font-mono text-[10px] text-slate-300 overflow-x-auto w-full lg:w-auto py-1">
                   <span className="px-2 py-1 rounded bg-slate-900 border border-rose-500/30 text-rose-300 font-bold shrink-0"><i className="fa-solid fa-lock mr-1"></i> Private Input</span>
                   <i className="fa-solid fa-arrow-right text-slate-600 text-[10px]"></i>
@@ -1092,7 +1092,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
             {/* TAB 1: DASHBOARD OVERVIEW */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                
+
                 {/* 7 Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                   <div onClick={() => handleSwitchTab('tenders-available')} className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 shadow hover:border-teal-500/40 transition cursor-pointer">
@@ -1182,7 +1182,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                 {/* Timeline & Closing Soon Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  
+
                   {/* Timeline */}
                   <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-5 shadow-xl">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
@@ -1269,7 +1269,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
             {activeTab === 'tenders-available' && (
               <div className="space-y-6">
                 <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-5 shadow-xl">
-                  
+
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
                     <div>
                       <h2 className="text-lg font-bold text-white">Available Tenders Directory</h2>
@@ -1283,7 +1283,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                   {/* Filter Controls Bar */}
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                    
+
                     {/* Tender Type Dropdown */}
                     <div>
                       <label className="block font-medium text-slate-400 mb-1">Tender Type</label>
@@ -1496,7 +1496,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               return (
                 <div className="space-y-6">
                   <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-6 shadow-xl space-y-6">
-                    
+
                     {/* Details Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
                       <div>
@@ -1691,8 +1691,8 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                         { id: 'certification', label: 'Certification Proof', icon: 'fa-certificate', desc: 'Prove: Possesses required ISO cert' },
                         { id: 'financial', label: 'Financial Eligibility', icon: 'fa-vault', desc: 'Prove: Satisfies solvency ratio' }
                       ].map(pt => (
-                        <div 
-                          key={pt.id} 
+                        <div
+                          key={pt.id}
                           onClick={() => setProofType(pt.id)}
                           className={`p-3 rounded-xl bg-slate-950 border-2 cursor-pointer transition ${proofType === pt.id ? 'border-teal-500' : 'border-slate-800'}`}
                         >
@@ -1753,16 +1753,16 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     <div className="flex items-center space-x-3">
                       {orgEditMode ? (
                         <>
-                          <button 
-                            type="button" 
-                            onClick={() => setOrgEditMode(false)} 
+                          <button
+                            type="button"
+                            onClick={() => setOrgEditMode(false)}
                             className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition"
                           >
                             Cancel
                           </button>
-                          <button 
-                            type="button" 
-                            onClick={handleSaveOrgProfile} 
+                          <button
+                            type="button"
+                            onClick={handleSaveOrgProfile}
                             disabled={orgSaving}
                             className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-600/20 transition flex items-center space-x-2"
                           >
@@ -1770,9 +1770,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                           </button>
                         </>
                       ) : (
-                        <button 
-                          type="button" 
-                          onClick={() => setOrgEditMode(true)} 
+                        <button
+                          type="button"
+                          onClick={() => setOrgEditMode(true)}
                           className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg transition flex items-center space-x-2"
                         >
                           <i className="fa-solid fa-pen-to-square"></i>
@@ -1795,8 +1795,8 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                           <span className="font-mono text-slate-400 text-[11px]">({stats.filledCount} of {stats.totalRequired} required fields complete)</span>
                         </div>
                         <div className="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-500 ${stats.isComplete ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-teal-400'}`} 
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${stats.isComplete ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-teal-400'}`}
                             style={{ width: `${stats.percentage}%` }}
                           ></div>
                         </div>
@@ -1813,7 +1813,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                 {/* Main Form Body */}
                 <form onSubmit={handleSaveOrgProfile} className="space-y-6">
-                  
+
                   {/* 1. COMPANY INFORMATION */}
                   <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-6 shadow-xl space-y-4">
                     <h3 className="text-sm font-bold text-white border-b border-slate-800 pb-2.5 flex items-center space-x-2">
@@ -1824,33 +1824,33 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-slate-400 font-medium mb-1">Organization ID (Auto-Generated)</label>
-                        <input 
-                          type="text" 
-                          value={orgData.organizationId || 'Auto-generated on save'} 
-                          disabled 
-                          className="w-full p-2.5 bg-slate-950/60 border border-slate-800/60 rounded-lg text-teal-400 font-mono text-xs cursor-not-allowed" 
+                        <input
+                          type="text"
+                          value={orgData.organizationId || 'Auto-generated on save'}
+                          disabled
+                          className="w-full p-2.5 bg-slate-950/60 border border-slate-800/60 rounded-lg text-teal-400 font-mono text-xs cursor-not-allowed"
                         />
                       </div>
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Company Name <span className="text-red-400">*</span></label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           disabled={!orgEditMode}
-                          value={orgData.companyName} 
-                          onChange={(e) => setOrgData({ ...orgData, companyName: e.target.value })} 
+                          value={orgData.companyName}
+                          onChange={(e) => setOrgData({ ...orgData, companyName: e.target.value })}
                           placeholder="e.g. ABC Technologies Pvt. Ltd."
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required 
+                          required
                         />
                       </div>
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Organization Type <span className="text-red-400">*</span></label>
-                        <select 
+                        <select
                           disabled={!orgEditMode}
-                          value={orgData.organizationType} 
-                          onChange={(e) => setOrgData({ ...orgData, organizationType: e.target.value })} 
+                          value={orgData.organizationType}
+                          onChange={(e) => setOrgData({ ...orgData, organizationType: e.target.value })}
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
                           required
                         >
@@ -1867,24 +1867,24 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Registration Number <span className="text-red-400">*</span></label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           disabled={!orgEditMode}
-                          value={orgData.registrationNumber} 
-                          onChange={(e) => setOrgData({ ...orgData, registrationNumber: e.target.value })} 
+                          value={orgData.registrationNumber}
+                          onChange={(e) => setOrgData({ ...orgData, registrationNumber: e.target.value })}
                           placeholder="e.g. REG-892019"
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required 
+                          required
                         />
                       </div>
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">GSTIN Number</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           disabled={!orgEditMode}
-                          value={orgData.gstNumber} 
-                          onChange={(e) => setOrgData({ ...orgData, gstNumber: e.target.value.toUpperCase() })} 
+                          value={orgData.gstNumber}
+                          onChange={(e) => setOrgData({ ...orgData, gstNumber: e.target.value.toUpperCase() })}
                           placeholder="e.g. 27AABCU9603R1ZM"
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
                         />
@@ -1892,11 +1892,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">PAN Number</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           disabled={!orgEditMode}
-                          value={orgData.panNumber} 
-                          onChange={(e) => setOrgData({ ...orgData, panNumber: e.target.value.toUpperCase() })} 
+                          value={orgData.panNumber}
+                          onChange={(e) => setOrgData({ ...orgData, panNumber: e.target.value.toUpperCase() })}
                           placeholder="e.g. ABCDE1234F"
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
                         />
@@ -1906,11 +1906,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                         <label className="block text-slate-300 font-medium mb-1">
                           CIN Number {(orgData.organizationType === 'Private Limited' || orgData.organizationType === 'Public Limited') && <span className="text-red-400">* (Req)</span>}
                         </label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           disabled={!orgEditMode}
-                          value={orgData.cinNumber} 
-                          onChange={(e) => setOrgData({ ...orgData, cinNumber: e.target.value.toUpperCase() })} 
+                          value={orgData.cinNumber}
+                          onChange={(e) => setOrgData({ ...orgData, cinNumber: e.target.value.toUpperCase() })}
                           placeholder="e.g. U72200MH2020PTC123456"
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
                           required={orgData.organizationType === 'Private Limited' || orgData.organizationType === 'Public Limited'}
@@ -1919,11 +1919,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Year Established</label>
-                        <input 
-                          type="number" 
+                        <input
+                          type="number"
                           disabled={!orgEditMode}
-                          value={orgData.yearEstablished} 
-                          onChange={(e) => setOrgData({ ...orgData, yearEstablished: e.target.value })} 
+                          value={orgData.yearEstablished}
+                          onChange={(e) => setOrgData({ ...orgData, yearEstablished: e.target.value })}
                           min="1800"
                           max={new Date().getFullYear()}
                           placeholder="e.g. 2018"
@@ -1933,10 +1933,10 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Company Size</label>
-                        <select 
+                        <select
                           disabled={!orgEditMode}
-                          value={orgData.companySize} 
-                          onChange={(e) => setOrgData({ ...orgData, companySize: e.target.value })} 
+                          value={orgData.companySize}
+                          onChange={(e) => setOrgData({ ...orgData, companySize: e.target.value })}
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
                         >
                           <option value="Micro">Micro (1-10 employees)</option>
@@ -1949,10 +1949,10 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Business Category <span className="text-red-400">*</span></label>
-                        <select 
+                        <select
                           disabled={!orgEditMode}
-                          value={orgData.businessCategory} 
-                          onChange={(e) => setOrgData({ ...orgData, businessCategory: e.target.value })} 
+                          value={orgData.businessCategory}
+                          onChange={(e) => setOrgData({ ...orgData, businessCategory: e.target.value })}
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
                           required
                         >
@@ -1980,23 +1980,23 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Contact Person Name <span className="text-red-400">*</span></label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           disabled={!orgEditMode}
-                          value={orgData.contactPerson} 
-                          onChange={(e) => setOrgData({ ...orgData, contactPerson: e.target.value })} 
+                          value={orgData.contactPerson}
+                          onChange={(e) => setOrgData({ ...orgData, contactPerson: e.target.value })}
                           placeholder="e.g. Vikas Sharma"
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required 
+                          required
                         />
                       </div>
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Designation <span className="text-red-400">*</span></label>
-                        <select 
+                        <select
                           disabled={!orgEditMode}
-                          value={orgData.designation} 
-                          onChange={(e) => setOrgData({ ...orgData, designation: e.target.value })} 
+                          value={orgData.designation}
+                          onChange={(e) => setOrgData({ ...orgData, designation: e.target.value })}
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
                           required
                         >
@@ -2012,38 +2012,38 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Email Address <span className="text-red-400">*</span></label>
-                        <input 
-                          type="email" 
+                        <input
+                          type="email"
                           disabled={!orgEditMode}
-                          value={orgData.email} 
-                          onChange={(e) => setOrgData({ ...orgData, email: e.target.value })} 
+                          value={orgData.email}
+                          onChange={(e) => setOrgData({ ...orgData, email: e.target.value })}
                           placeholder="company@domain.com"
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required 
+                          required
                         />
                       </div>
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Phone Number <span className="text-red-400">*</span></label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           disabled={!orgEditMode}
-                          value={orgData.phone} 
-                          onChange={(e) => setOrgData({ ...orgData, phone: e.target.value })} 
+                          value={orgData.phone}
+                          onChange={(e) => setOrgData({ ...orgData, phone: e.target.value })}
                           placeholder="e.g. +91 98765 43210"
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required 
+                          required
                         />
                       </div>
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Website URL</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           disabled={!orgEditMode}
-                          value={orgData.website} 
-                          onChange={(e) => setOrgData({ ...orgData, website: e.target.value })} 
-                          placeholder="e.g. https://www.abctech.com"
+                          value={orgData.website}
+                          onChange={(e) => setOrgData({ ...orgData, website: e.target.value })}
+                          placeholder="e.g. https://www.company.com"
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
                         />
                       </div>
@@ -2060,22 +2060,22 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-slate-300 font-medium mb-1">Full Registered Address <span className="text-red-400">*</span></label>
-                        <textarea 
+                        <textarea
                           disabled={!orgEditMode}
-                          value={orgData.address} 
-                          onChange={(e) => setOrgData({ ...orgData, address: e.target.value })} 
+                          value={orgData.address}
+                          onChange={(e) => setOrgData({ ...orgData, address: e.target.value })}
                           placeholder="e.g. Suite 402, Corporate Tech Park, Sector 5"
-                          rows={2} 
+                          rows={2}
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required 
+                          required
                         />
                       </div>
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">State / Union Territory <span className="text-red-400">*</span></label>
-                        <select 
+                        <select
                           disabled={!orgEditMode}
-                          value={orgData.state} 
+                          value={orgData.state}
                           onChange={(e) => {
                             const newSt = e.target.value;
                             const availableDistricts = indianStatesAndDistricts[newSt] || ["Main District", "Other"];
@@ -2084,7 +2084,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                               state: newSt,
                               district: availableDistricts[0]
                             });
-                          }} 
+                          }}
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
                           required
                         >
@@ -2096,10 +2096,10 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">District <span className="text-red-400">*</span></label>
-                        <select 
+                        <select
                           disabled={!orgEditMode}
-                          value={orgData.district} 
-                          onChange={(e) => setOrgData({ ...orgData, district: e.target.value })} 
+                          value={orgData.district}
+                          onChange={(e) => setOrgData({ ...orgData, district: e.target.value })}
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
                           required
                         >
@@ -2111,27 +2111,27 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">City <span className="text-red-400">*</span></label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           disabled={!orgEditMode}
-                          value={orgData.city} 
-                          onChange={(e) => setOrgData({ ...orgData, city: e.target.value })} 
+                          value={orgData.city}
+                          onChange={(e) => setOrgData({ ...orgData, city: e.target.value })}
                           placeholder="e.g. Mumbai"
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required 
+                          required
                         />
                       </div>
 
                       <div>
                         <label className="block text-slate-300 font-medium mb-1">Pincode (6 digits) <span className="text-red-400">*</span></label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           disabled={!orgEditMode}
-                          value={orgData.pincode} 
-                          onChange={(e) => setOrgData({ ...orgData, pincode: e.target.value })} 
+                          value={orgData.pincode}
+                          onChange={(e) => setOrgData({ ...orgData, pincode: e.target.value })}
                           placeholder="e.g. 400001"
                           className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required 
+                          required
                         />
                       </div>
                     </div>
@@ -2181,15 +2181,15 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                   {orgEditMode && (
                     <div className="pt-2 flex justify-end space-x-3">
-                      <button 
-                        type="button" 
-                        onClick={() => setOrgEditMode(false)} 
+                      <button
+                        type="button"
+                        onClick={() => setOrgEditMode(false)}
                         className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition"
                       >
                         Cancel
                       </button>
-                      <button 
-                        type="submit" 
+                      <button
+                        type="submit"
                         disabled={orgSaving}
                         className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-600/20 transition flex items-center space-x-2"
                       >
@@ -2218,80 +2218,80 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-slate-300 font-medium mb-1">Full Name / Officer Name</label>
-                      <input 
-                        type="text" 
-                        value={profileName} 
-                        onChange={(e) => setProfileName(e.target.value)} 
+                      <input
+                        type="text"
+                        value={profileName}
+                        onChange={(e) => setProfileName(e.target.value)}
                         placeholder="e.g. Vikas Sharma"
                         className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none"
-                        required 
+                        required
                       />
                     </div>
 
                     <div>
                       <label className="block text-slate-300 font-medium mb-1">Email Address (Verified)</label>
-                      <input 
-                        type="email" 
-                        value={profileEmail} 
-                        disabled 
+                      <input
+                        type="email"
+                        value={profileEmail}
+                        disabled
                         placeholder="user@example.com"
-                        className="w-full p-2.5 bg-slate-950/60 border border-slate-800/60 rounded-lg text-slate-400 text-xs cursor-not-allowed" 
+                        className="w-full p-2.5 bg-slate-950/60 border border-slate-800/60 rounded-lg text-slate-400 text-xs cursor-not-allowed"
                       />
                     </div>
 
                     <div>
                       <label className="block text-slate-300 font-medium mb-1">Organization / Company Name</label>
-                      <input 
-                        type="text" 
-                        value={profileCompany} 
-                        onChange={(e) => setProfileCompany(e.target.value)} 
+                      <input
+                        type="text"
+                        value={profileCompany}
+                        onChange={(e) => setProfileCompany(e.target.value)}
                         placeholder="e.g. ABC Technologies Pvt. Ltd."
-                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none" 
+                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none"
                       />
                     </div>
 
                     <div>
                       <label className="block text-slate-300 font-medium mb-1">Organization ID</label>
-                      <input 
-                        type="text" 
-                        value={profileOrgId} 
-                        onChange={(e) => setProfileOrgId(e.target.value)} 
+                      <input
+                        type="text"
+                        value={profileOrgId}
+                        onChange={(e) => setProfileOrgId(e.target.value)}
                         placeholder="e.g. ORG001"
-                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-teal-400 font-mono text-xs focus:border-teal-500 focus:outline-none" 
+                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-teal-400 font-mono text-xs focus:border-teal-500 focus:outline-none"
                       />
                     </div>
 
                     <div>
                       <label className="block text-slate-300 font-medium mb-1">Phone Number</label>
-                      <input 
-                        type="text" 
-                        value={profilePhone} 
-                        onChange={(e) => setProfilePhone(e.target.value)} 
+                      <input
+                        type="text"
+                        value={profilePhone}
+                        onChange={(e) => setProfilePhone(e.target.value)}
                         placeholder="e.g. +91 98765 43210"
-                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none" 
+                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none"
                       />
                     </div>
 
                     <div>
                       <label className="block text-slate-300 font-medium mb-1">GSTIN / Tax ID</label>
-                      <input 
-                        type="text" 
-                        value={profileGst} 
-                        onChange={(e) => setProfileGst(e.target.value)} 
+                      <input
+                        type="text"
+                        value={profileGst}
+                        onChange={(e) => setProfileGst(e.target.value)}
                         placeholder="e.g. 27AABCU9603R1ZM"
-                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs focus:border-teal-500 focus:outline-none" 
+                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs focus:border-teal-500 focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-slate-300 font-medium mb-1">Registered Address</label>
-                    <textarea 
-                      value={profileAddress} 
-                      onChange={(e) => setProfileAddress(e.target.value)} 
+                    <textarea
+                      value={profileAddress}
+                      onChange={(e) => setProfileAddress(e.target.value)}
                       placeholder="e.g. Corporate Tech Park, Sector 5, Cyber City"
-                      rows={2} 
-                      className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none" 
+                      rows={2}
+                      className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none"
                     />
                   </div>
 
@@ -2300,9 +2300,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                       <span>Prover Key Status: </span>
                       <span className="text-emerald-400 font-bold">Loaded (Groth16_Poseidon)</span>
                     </div>
-                    <button 
-                      type="submit" 
-                      disabled={profileSaving} 
+                    <button
+                      type="submit"
+                      disabled={profileSaving}
                       className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-lg shadow-lg shadow-teal-600/20 transition flex items-center space-x-2"
                     >
                       {profileSaving ? 'Saving to MongoDB...' : 'Save Profile Changes'}
@@ -2362,11 +2362,10 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                         <button
                           type="button"
                           onClick={handleToggleNotifications}
-                          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono transition flex items-center space-x-1.5 shadow-md ${
-                            notificationsEnabled 
-                              ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/30' 
+                          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono transition flex items-center space-x-1.5 shadow-md ${notificationsEnabled
+                              ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/30'
                               : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700'
-                          }`}
+                            }`}
                         >
                           <i className={`fa-solid ${notificationsEnabled ? 'fa-toggle-on text-emerald-200' : 'fa-toggle-off text-slate-500'} text-base`}></i>
                           <span>{notificationsEnabled ? 'ON' : 'OFF'}</span>
@@ -2394,11 +2393,10 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                           <button
                             type="button"
                             onClick={handleToggleMailNotifications}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono transition flex items-center space-x-1.5 shadow-md ${
-                              mailNotificationsEnabled 
-                                ? 'bg-amber-600 hover:bg-amber-500 text-white border border-amber-400/30' 
+                            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono transition flex items-center space-x-1.5 shadow-md ${mailNotificationsEnabled
+                                ? 'bg-amber-600 hover:bg-amber-500 text-white border border-amber-400/30'
                                 : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700'
-                            }`}
+                              }`}
                           >
                             <i className={`fa-solid ${mailNotificationsEnabled ? 'fa-toggle-on text-amber-200' : 'fa-toggle-off text-slate-500'} text-base`}></i>
                             <span>{mailNotificationsEnabled ? 'MAIL ON' : 'MAIL OFF'}</span>
@@ -2415,9 +2413,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                             <label className="flex items-center space-x-2.5 p-2.5 bg-slate-950 rounded-lg border border-slate-800/80 cursor-pointer hover:border-slate-700 transition">
-                              <input 
-                                type="checkbox" 
-                                checked={mailSubCategories.bidUpdates} 
+                              <input
+                                type="checkbox"
+                                checked={mailSubCategories.bidUpdates}
                                 onChange={() => handleToggleMailSubCategory('bidUpdates')}
                                 className="accent-teal-500 rounded"
                               />
@@ -2425,9 +2423,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                             </label>
 
                             <label className="flex items-center space-x-2.5 p-2.5 bg-slate-950 rounded-lg border border-slate-800/80 cursor-pointer hover:border-slate-700 transition">
-                              <input 
-                                type="checkbox" 
-                                checked={mailSubCategories.zkpProofs} 
+                              <input
+                                type="checkbox"
+                                checked={mailSubCategories.zkpProofs}
                                 onChange={() => handleToggleMailSubCategory('zkpProofs')}
                                 className="accent-teal-500 rounded"
                               />
@@ -2435,9 +2433,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                             </label>
 
                             <label className="flex items-center space-x-2.5 p-2.5 bg-slate-950 rounded-lg border border-slate-800/80 cursor-pointer hover:border-slate-700 transition">
-                              <input 
-                                type="checkbox" 
-                                checked={mailSubCategories.deadlines} 
+                              <input
+                                type="checkbox"
+                                checked={mailSubCategories.deadlines}
                                 onChange={() => handleToggleMailSubCategory('deadlines')}
                                 className="accent-teal-500 rounded"
                               />
@@ -2445,9 +2443,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                             </label>
 
                             <label className="flex items-center space-x-2.5 p-2.5 bg-slate-950 rounded-lg border border-slate-800/80 cursor-pointer hover:border-slate-700 transition">
-                              <input 
-                                type="checkbox" 
-                                checked={mailSubCategories.newTenders} 
+                              <input
+                                type="checkbox"
+                                checked={mailSubCategories.newTenders}
                                 onChange={() => handleToggleMailSubCategory('newTenders')}
                                 className="accent-teal-500 rounded"
                               />
@@ -2490,11 +2488,10 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                         <button
                           type="button"
                           onClick={handleToggleStrictZk}
-                          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono transition flex items-center space-x-1.5 shadow-md ${
-                            strictZkMode 
-                              ? 'bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-400/30' 
+                          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono transition flex items-center space-x-1.5 shadow-md ${strictZkMode
+                              ? 'bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-400/30'
                               : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700'
-                          }`}
+                            }`}
                         >
                           <i className={`fa-solid ${strictZkMode ? 'fa-toggle-on text-cyan-200' : 'fa-toggle-off text-slate-500'} text-base`}></i>
                           <span>{strictZkMode ? 'STRICT ON' : 'OFF'}</span>
@@ -2538,6 +2535,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               </div>
             )}
 
+            {/* TAB: EVALUATION RESULTS SCORECARD */}
+            {activeTab === 'eval-results' && (
+              <EvaluationDashboard selectedTenderId={selectedTender?.id || 'T001'} currentUser={currentUser} />
+            )}
+
           </main>
         </div>
       </div>
@@ -2561,14 +2563,14 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
             </p>
 
             <div className="flex items-center justify-end space-x-3 pt-2">
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowLogoutModal(false)}
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={handleProceedLogout}
                 className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/30 transition flex items-center space-x-2"
@@ -2580,6 +2582,25 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
           </div>
         </div>
       )}
+
+      {/* Vendor ZKP Eligibility Gate Modal */}
+      <EligibilityModal
+        isOpen={eligibilityModalOpen}
+        onClose={() => setEligibilityModalOpen(false)}
+        tender={selectedTender}
+        currentUser={currentUser}
+        onToast={triggerToast}
+        onSuccess={(verifyData) => {
+          const tId = selectedTender?.id || selectedTender?.tenderId || 'T001';
+          setVerifiedEligibilityTenders(prev => ({ ...prev, [tId]: verifyData }));
+          setEligibilityModalOpen(false);
+          setWizardStep(1);
+          setWizardSuccess(false);
+          setWizardProgress(0);
+          setDeclarationChecked(false);
+          handleSwitchTab('bidding-submit');
+        }}
+      />
     </div>
   );
 }

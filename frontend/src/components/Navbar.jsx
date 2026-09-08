@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Award, LogIn, LogOut, ChevronDown, Flag, BarChart2, Globe, HelpingHand, Landmark, KeyRound, FolderKanban, Info, CreditCard, LayoutDashboard, FileText, Search, X, ChevronRight, ShieldCheck } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
@@ -46,22 +47,22 @@ export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard })
   return (
     <nav className="navbar" style={{ background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', boxShadow: scrolled ? '0 4px 20px rgba(0, 0, 0, 0.08)' : '0 2px 10px rgba(0, 0, 0, 0.04)' }}>
       <div className="container">
-        <div 
-          className="logo-header-group" 
-          ref={toggleMenuRef} 
+        <div
+          className="logo-header-group"
+          ref={toggleMenuRef}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}
         >
           {/* Animated Menu Toggle Button */}
-          <div 
+          <div
             className="menu-toggle-trigger"
             onClick={() => setMenuOpen(!menuOpen)}
             onMouseEnter={() => setMenuOpen(true)}
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
           >
-            <input 
-              type="checkbox" 
-              id="checkbox" 
-              checked={menuOpen} 
+            <input
+              type="checkbox"
+              id="checkbox"
+              checked={menuOpen}
               readOnly
             />
             <label className="toggle" title="Toggle Quick Navigation Menu" style={{ cursor: 'pointer' }}>
@@ -83,7 +84,7 @@ export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard })
 
           {/* HEADER MENU DROPDOWN BOX */}
           {menuOpen && (
-            <div 
+            <div
               className="header-dropdown-box"
               style={{
                 position: 'absolute',
@@ -174,8 +175,8 @@ export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard })
         <ul className="nav-links">
           {/* SERVICES DROPDOWN */}
           <li className={`nav-item-dropdown ${dropdownOpen ? 'open' : ''}`} ref={dropdownRef}>
-            <a 
-              href="#services" 
+            <a
+              href="#services"
               className="nav-link dropdown-toggle"
               onClick={(e) => { e.preventDefault(); setDropdownOpen(!dropdownOpen); }}
             >
@@ -249,10 +250,10 @@ export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard })
           </li>
 
           <li>
-            <a 
-              href="https://www.tenderdetail.com/pricing" 
-              target="_blank" 
-              rel="noreferrer" 
+            <a
+              href="https://www.tenderdetail.com/pricing"
+              target="_blank"
+              rel="noreferrer"
               className="nav-link"
             >
               Subscription Plan
@@ -260,10 +261,10 @@ export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard })
           </li>
 
           <li>
-            <a 
-              href="https://www.tenderdetail.com/pay-online" 
-              target="_blank" 
-              rel="noreferrer" 
+            <a
+              href="https://www.tenderdetail.com/pay-online"
+              target="_blank"
+              rel="noreferrer"
               className="nav-link"
               style={{ fontWeight: 700, color: '#D97706' }}
             >
@@ -285,14 +286,14 @@ export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard })
                     <ShieldCheck size={10} color="#059669" /> 15m Auto-Logout Active
                   </span>
                 </div>
-                <button 
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
                     if (window.confirm("Are you sure you want to log out of your account?")) {
-                      onLogout(); 
+                      onLogout();
                     }
-                  }} 
-                  className="btn btn-secondary" 
+                  }}
+                  className="btn btn-secondary"
                   style={{ padding: '4px 8px', fontSize: '0.72rem', marginLeft: '4px' }}
                   title="Sign Out"
                 >
@@ -301,8 +302,8 @@ export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard })
               </div>
             </>
           ) : (
-            <button 
-              onClick={onOpenLogin} 
+            <button
+              onClick={onOpenLogin}
               className="btn btn-primary"
               style={{ padding: '6px 14px', fontSize: '0.8rem', height: '34px' }}
             >
