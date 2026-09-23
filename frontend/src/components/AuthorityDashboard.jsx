@@ -17,6 +17,10 @@ const initialBlockchainBlocks = [
 export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
   const mainContentRef = useRef(null);
 
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('zk_gov_active_tab') || 'gov-dashboard';
+  });
+
   useEffect(() => {
     localStorage.setItem('zk_gov_active_tab', activeTab);
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
@@ -33,7 +37,20 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [lightTheme, setLightTheme] = useState(true);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const profileDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -61,10 +78,6 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
     hashFunction: 'Poseidon Hash',
     status: 'ACTIVE_VALIDATED'
   });
-
-  useEffect(() => {
-    localStorage.setItem('zk_gov_active_tab', activeTab);
-  }, [activeTab]);
 
   // Fetch stored Tenders from MongoDB Atlas Database on mount
   useEffect(() => {
@@ -197,7 +210,11 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
 
             {/* Header / Brand */}
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+              <div 
+                onClick={() => setActiveTab('gov-dashboard')} 
+                className="flex items-center space-x-3 cursor-pointer hover:opacity-90 transition"
+                title="Go to Government Dashboard Overview"
+              >
                 <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold shrink-0">
                   <i className="fa-solid fa-building-columns text-sm"></i>
                 </div>
@@ -310,14 +327,18 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           
           {/* HEADER BAR */}
-          <header className="bg-slate-900/90 border-b border-slate-800 px-4 py-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md">
+          <header className={`px-4 py-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md border-b transition-colors duration-200 ${
+            lightTheme ? 'bg-white/90 border-slate-200 text-slate-900 shadow-sm' : 'bg-slate-900/90 border-slate-800 text-white'
+          }`}>
             <div className="flex items-center space-x-3">
-              <button onClick={() => setMobileSidebarOpen(true)} className="md:hidden p-2 rounded-lg text-slate-400 hover:bg-slate-800">
+              <button onClick={() => setMobileSidebarOpen(true)} className={`md:hidden p-2 rounded-lg transition ${
+                lightTheme ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
+              }`}>
                 <i className="fa-solid fa-bars text-lg"></i>
               </button>
               <div>
-                <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">{tabTitles[activeTab]}</h1>
-                <p className="text-[11px] text-slate-400 hidden sm:block">Logged in as <span className="text-slate-200 font-semibold">{officerName}</span> ({orgId})</p>
+                <h1 className={`text-base sm:text-lg font-bold tracking-tight ${lightTheme ? 'text-slate-900' : 'text-white'}`}>{tabTitles[activeTab]}</h1>
+                <p className={`text-[11px] hidden sm:block ${lightTheme ? 'text-slate-500' : 'text-slate-400'}`}>Logged in as <span className={`font-semibold ${lightTheme ? 'text-slate-800' : 'text-slate-200'}`}>{officerName}</span> ({orgId})</p>
               </div>
             </div>
 
@@ -328,24 +349,122 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
               {/* Theme Toggle */}
               <button 
                 onClick={() => setLightTheme(!lightTheme)}
-                className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:text-white transition flex items-center space-x-1.5"
+                className={`p-2 rounded-lg border transition-all duration-200 flex items-center justify-center shadow-sm ${
+                  lightTheme
+                    ? 'bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20'
+                    : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white'
+                }`}
+                title={lightTheme ? "Switch to Dark Theme" : "Switch to Light Theme"}
               >
                 <i className={`fa-solid ${lightTheme ? 'fa-sun text-amber-500' : 'fa-moon text-indigo-400'}`}></i>
-                <span className="text-xs font-medium hidden sm:inline">{lightTheme ? 'Light' : 'Dark'}</span>
               </button>
 
               {/* Notification Bell */}
               <div className="relative">
-                <button onClick={() => setNotifOpen(!notifOpen)} className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 relative">
+                <button onClick={() => setNotifOpen(!notifOpen)} className={`p-2 rounded-lg relative transition ${lightTheme ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
                   <i className="fa-regular fa-bell text-base"></i>
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-400 rounded-full"></span>
                 </button>
                 {notifOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 p-3 space-y-2 text-xs">
-                    <div className="font-bold text-teal-400 border-b border-slate-800 pb-1">Government Officer Log</div>
-                    <div className="text-slate-300 space-y-1 text-[11px]">
+                  <div className={`absolute right-0 mt-2 w-80 rounded-xl shadow-2xl z-50 p-3 space-y-2 text-xs border ${
+                    lightTheme ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-slate-200'
+                  }`}>
+                    <div className={`font-bold border-b pb-1 ${lightTheme ? 'text-teal-600 border-slate-100' : 'text-teal-400 border-slate-800'}`}>Government Officer Log</div>
+                    <div className={`space-y-1 text-[11px] ${lightTheme ? 'text-slate-600' : 'text-slate-300'}`}>
                       <p>🟢 Vendor organization profile verified for CyberShield Systems.</p>
                       <p>🟢 ZK Range Proof hash anchored to block #154891.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Organization / Officer Profile Dropdown Pill */}
+              <div className="relative" ref={profileDropdownRef}>
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className={`p-0.5 rounded-full border transition-all duration-200 shadow-sm hover:scale-105 cursor-pointer ${
+                    lightTheme
+                      ? 'bg-white border-slate-300 hover:border-teal-500 shadow-slate-200'
+                      : 'bg-slate-900 border-slate-700 hover:border-teal-400'
+                  }`}
+                  title={`Authority Profile: ${officerName} (${orgId})`}
+                >
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-teal-600 text-white font-mono text-xs font-extrabold flex items-center justify-center shadow-md border border-teal-400/40">
+                    <i className="fa-solid fa-building-columns text-xs"></i>
+                  </div>
+                </button>
+
+                {/* Organization Flyout Dropdown */}
+                {profileDropdownOpen && (
+                  <div className={`absolute right-0 mt-2 w-72 p-3.5 rounded-2xl border shadow-2xl z-50 space-y-3 font-sans text-xs ${
+                    lightTheme ? 'bg-white border-slate-200 text-slate-900 shadow-slate-300/50' : 'bg-slate-900 border-slate-800 text-white'
+                  }`}>
+                    <div className={`p-3 rounded-xl border space-y-2 ${
+                      lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+                    }`}>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-teal-600 text-white flex items-center justify-center shadow-md border-2 border-teal-500/40 shrink-0">
+                          <i className="fa-solid fa-building-columns text-sm"></i>
+                        </div>
+                        <div className="overflow-hidden">
+                          <h4 className={`font-bold text-xs truncate ${lightTheme ? 'text-slate-900' : 'text-white'}`}>{officerName}</h4>
+                          <p className="text-[10px] font-mono text-teal-500 font-semibold truncate">{orgId}</p>
+                          <p className="text-[9px] text-slate-400 truncate mt-0.5">Government Tender Authority</p>
+                        </div>
+                      </div>
+
+                      <div className={`pt-2 flex items-center justify-between text-[10px] font-mono border-t ${
+                        lightTheme ? 'border-slate-200' : 'border-slate-800'
+                      }`}>
+                        <span className={lightTheme ? 'text-slate-500' : 'text-slate-400'}>Role:</span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-teal-500/20 text-teal-600 border border-teal-500/30">
+                          Tender Evaluator
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => {
+                          setActiveTab('create-tender');
+                          setProfileDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center space-x-2 p-2 rounded-xl transition font-medium ${
+                          lightTheme ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-slate-800 text-slate-200'
+                        }`}
+                      >
+                        <i className="fa-solid fa-plus text-teal-500"></i>
+                        <span>Create New Tender</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActiveTab('bids-received');
+                          setProfileDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center space-x-2 p-2 rounded-xl transition font-medium ${
+                          lightTheme ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-slate-800 text-slate-200'
+                        }`}
+                      >
+                        <i className="fa-solid fa-folder-open text-indigo-500"></i>
+                        <span>Manage Received Bids</span>
+                      </button>
+                    </div>
+
+                    <div className={`pt-1 border-t ${lightTheme ? 'border-slate-100' : 'border-slate-800'}`}>
+                      <button
+                        onClick={() => {
+                          setProfileDropdownOpen(false);
+                          setShowLogoutModal(true);
+                        }}
+                        className={`w-full p-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition border ${
+                          lightTheme
+                            ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                            : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20'
+                        }`}
+                      >
+                        <i className="fa-solid fa-right-from-bracket"></i> Sign Out Account
+                      </button>
                     </div>
                   </div>
                 )}
@@ -802,8 +921,14 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
 
       {/* LOGOUT CONFIRMATION MODAL WITH BLUR OVERLAY */}
       {showLogoutModal && (
-        <div className="fixed inset-0 w-screen h-screen bg-slate-950/40 backdrop-blur-md z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-          <div className="bg-white/95 backdrop-blur-2xl border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 text-slate-900">
+        <div 
+          className="fixed inset-0 w-screen h-screen bg-slate-950/40 backdrop-blur-md z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+        >
+          <div 
+            className="bg-white/80 backdrop-blur-2xl border border-slate-200/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 text-slate-900"
+            style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+          >
             <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
               <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
                 <i className="fa-solid fa-triangle-exclamation text-lg text-rose-500"></i>
@@ -814,7 +939,7 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
               </div>
             </div>
 
-            <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200 font-medium">
+            <p className="text-xs text-slate-700 leading-relaxed bg-slate-100/60 backdrop-blur-sm p-3.5 rounded-xl border border-slate-200/80 font-medium">
               Logging out will end your active session on the ZK-Tenders Government Authority Portal.
             </p>
 

@@ -23,14 +23,21 @@ import './styles.css';
 
 export default function App() {
   const [currentView, setCurrentView] = useState(() => {
-    const path = (window.location.pathname || '').toLowerCase();
-    if (path.includes('vendor') || path.includes('dashboard') || path.includes('setting')) {
-      return 'dashboard';
+    try {
+      const path = (window.location.pathname || '').toLowerCase();
+      if (path.includes('authority') || path.includes('gov')) {
+        return 'authority-dashboard';
+      }
+      if (path.includes('vendor') || path.includes('dashboard')) {
+        return 'dashboard';
+      }
+      if (path.includes('login')) {
+        return 'login';
+      }
+      return 'home';
+    } catch (e) {
+      return 'home';
     }
-    if (path.includes('authority') || path.includes('gov')) {
-      return 'authority-dashboard';
-    }
-    return localStorage.getItem('zk_current_view') || 'home';
   });
 
   const [user, setUser] = useState(() => {
@@ -51,6 +58,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('zk_current_view', currentView);
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    if (currentView === 'home' && window.location.pathname !== '/') {
+      window.history.replaceState(null, '', '/');
+    }
   }, [currentView]);
 
   useEffect(() => {
@@ -151,6 +161,7 @@ export default function App() {
             onOpenLogin={() => setCurrentView('login')} 
             onLogout={handleLogout} 
             onOpenDashboard={() => setCurrentView('dashboard')}
+            onGoHome={() => setCurrentView('home')}
           />
           <LoginPage 
             onBack={() => setCurrentView('home')} 
@@ -170,6 +181,7 @@ export default function App() {
             onOpenLogin={() => setCurrentView('login')} 
             onLogout={handleLogout} 
             onOpenDashboard={() => setCurrentView('dashboard')}
+            onGoHome={() => setCurrentView('home')}
           />
           <ForgotPasswordPage 
             onBackToLogin={() => setCurrentView('login')} 
@@ -187,6 +199,7 @@ export default function App() {
           onOpenLogin={() => setCurrentView('login')} 
           onLogout={handleLogout} 
           onOpenDashboard={() => setCurrentView('dashboard')}
+          onGoHome={() => setCurrentView('home')}
         />
         <Hero onSearch={(params) => setSearchParams(params)} />
         <CategoryCards />

@@ -288,7 +288,7 @@ export default function EvaluationDashboard({ selectedTenderId = 'T001', current
           <div className="p-3 bg-teal-950/20 border border-teal-500/20 rounded-xl text-xs text-teal-300 space-y-1">
             <span className="font-semibold block text-teal-200">AHP Priority Vector Guarantee:</span>
             <p className="text-[11px] text-teal-300/80">
-              Weights are derived from the principal eigenvector ($\lambda_{\max} = {ahpSummary?.lambdaMax || 4.12}$) and normalized so $\sum W = 1.0$.
+              Weights are derived from the principal eigenvector (&lambda;<sub>max</sub> = {ahpSummary?.lambdaMax || 4.12}) and normalized so &sum; W = 1.0.
             </p>
           </div>
         </div>

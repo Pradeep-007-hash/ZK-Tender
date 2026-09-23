@@ -48,6 +48,19 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
   });
 
   const mainContentRef = useRef(null);
+  const profileDropdownRef = useRef(null);
+
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('zk_active_tab', activeTab);
@@ -556,7 +569,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
   // Titles mapping
   const titlesMap = {
     'dashboard': 'Dashboard Overview',
-    'org-profile': 'Vendor Organization Profile',
+    'org-profile': 'Vendor Organization & Account Profile',
+    'company-profile': 'Vendor Organization & Account Profile',
+    'profile': 'Vendor Organization & Account Profile',
     'tenders-available': 'Available Tenders Directory',
     'tenders-applied': 'Applied Tenders',
     'tender-details': 'Tender Specification & Requirements',
@@ -569,7 +584,6 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
     'eval-bid-status': 'Bid Lifecycle Inspector',
     'eval-proof-status': 'Proof Verification Status',
     'eval-results': 'Evaluation Results Scorecard',
-    'company-profile': 'Company Profile & Credentials',
     'settings': 'Account & Privacy Settings'
   };
 
@@ -703,7 +717,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
             {/* Sidebar Header / Logo */}
             <div className="px-4 py-4 flex items-center justify-between border-b border-slate-800/80 sticky top-0 bg-slate-900/95 backdrop-blur z-10">
-              <div className="flex items-center space-x-3 logo-hover-wrapper cursor-pointer">
+              <div 
+                onClick={() => handleSwitchTab('dashboard')} 
+                className="flex items-center space-x-3 logo-hover-wrapper cursor-pointer hover:opacity-90 transition"
+                title="Go to User Dashboard Overview"
+              >
 
                 {/* LOGO ICON */}
                 <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
@@ -722,29 +740,6 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               </button>
             </div>
 
-            {/* Vendor Profile Banner */}
-            {!sidebarCollapsed && (
-              <div className="p-3.5 mx-3 my-3 rounded-xl bg-slate-950/80 border border-slate-800">
-                <div className="flex items-center space-x-3">
-                  <div className="relative shrink-0">
-                    <div className="w-9 h-9 rounded-lg bg-teal-950 border border-teal-500/40 flex items-center justify-center text-teal-400 font-mono text-xs font-bold">
-                      {getVendorInitials(vendorName)}
-                    </div>
-                    <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-900 rounded-full" title="Groth16 Prover Online"></span>
-                  </div>
-                  <div className="overflow-hidden">
-                    <h4 className="font-semibold text-xs text-white truncate" title={vendorName}>{vendorName}</h4>
-                    <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5">{vendorId ? <>ID: <span className="text-teal-400">{vendorId}</span></> : <span className="text-teal-400/80">Verified Vendor Account</span>}</p>
-                    <div className="mt-1 flex items-center space-x-1">
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono bg-teal-500/10 text-teal-400 border border-teal-500/20">
-                        <i className="fa-solid fa-lock mr-1 text-[7px]"></i> ZK Prover Active
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* NAVIGATION TREE */}
             <nav className="px-3 space-y-1 text-xs font-medium flex-1 pb-4">
 
@@ -755,22 +750,6 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               >
                 <i className="fa-solid fa-chart-pie w-4 text-center shrink-0"></i>
                 {!sidebarCollapsed && <span>Dashboard</span>}
-              </button>
-
-              {/* Organization Profile */}
-              <button
-                onClick={() => handleSwitchTab('org-profile')}
-                className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${activeTab === 'org-profile' ? 'bg-teal-600 text-white font-semibold shadow-md shadow-teal-600/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
-              >
-                <div className="flex items-center space-x-2.5">
-                  <i className="fa-solid fa-building w-4 text-center text-teal-400 shrink-0"></i>
-                  {!sidebarCollapsed && <span>Organization Profile</span>}
-                </div>
-                {!sidebarCollapsed && (
-                  <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full font-bold ${getOrgCompletionStats(orgData).isComplete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
-                    {getOrgCompletionStats(orgData).percentage}%
-                  </span>
-                )}
               </button>
 
               {/* Tenders Group */}
@@ -806,14 +785,6 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                 {!sidebarCollapsed && <div className="px-3 pb-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Bidding</div>}
                 <div className="space-y-0.5">
                   <button
-                    onClick={() => handleSwitchTab('bidding-submit')}
-                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'bidding-submit' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
-                  >
-                    <i className="fa-solid fa-paper-plane w-4 text-center text-teal-400 shrink-0"></i>
-                    {!sidebarCollapsed && <span className="text-teal-300 font-semibold">Submit Bid</span>}
-                  </button>
-
-                  <button
                     onClick={() => handleSwitchTab('bidding-drafts')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${activeTab === 'bidding-drafts' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
@@ -833,39 +804,6 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                       {!sidebarCollapsed && <span>My Bids</span>}
                     </div>
                     {!sidebarCollapsed && <span className="bg-teal-500/20 text-teal-300 font-mono text-[9px] px-1.5 py-0.5 rounded-full font-bold">5</span>}
-                  </button>
-                </div>
-              </div>
-
-              {/* Zero-Knowledge Proofs Group */}
-              <div className="pt-2">
-                {!sidebarCollapsed && <div className="px-3 pb-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Zero-Knowledge Proofs</div>}
-                <div className="space-y-0.5">
-                  <button
-                    onClick={() => handleSwitchTab('zkp-generate')}
-                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'zkp-generate' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
-                  >
-                    <i className="fa-solid fa-microchip w-4 text-center text-blue-400 shrink-0"></i>
-                    {!sidebarCollapsed && <span>Generate ZKP</span>}
-                  </button>
-
-                  <button
-                    onClick={() => handleSwitchTab('zkp-my-proofs')}
-                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${activeTab === 'zkp-my-proofs' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
-                  >
-                    <div className="flex items-center space-x-2.5">
-                      <i className="fa-solid fa-key w-4 text-center shrink-0"></i>
-                      {!sidebarCollapsed && <span>My Proofs</span>}
-                    </div>
-                    {!sidebarCollapsed && <span className="bg-indigo-500/20 text-indigo-300 font-mono text-[9px] px-1.5 py-0.5 rounded-full font-bold">6</span>}
-                  </button>
-
-                  <button
-                    onClick={() => handleSwitchTab('zkp-verification')}
-                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'zkp-verification' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
-                  >
-                    <i className="fa-solid fa-shield-check w-4 text-center shrink-0"></i>
-                    {!sidebarCollapsed && <span>Proof Verification</span>}
                   </button>
                 </div>
               </div>
@@ -897,14 +835,6 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                 {!sidebarCollapsed && <div className="px-3 pb-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Account</div>}
                 <div className="space-y-0.5">
                   <button
-                    onClick={() => handleSwitchTab('company-profile')}
-                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'company-profile' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
-                  >
-                    <i className="fa-solid fa-building w-4 text-center shrink-0"></i>
-                    {!sidebarCollapsed && <span>Company Profile</span>}
-                  </button>
-
-                  <button
                     onClick={() => handleSwitchTab('settings')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2.5'} px-3 py-2 rounded-lg transition-all ${activeTab === 'settings' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
@@ -934,14 +864,18 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
           {/* TOP NAVIGATION BAR */}
-          <header className="bg-slate-900/90 border-b border-slate-800 px-4 py-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md">
+          <header className={`px-4 py-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md border-b transition-colors duration-200 ${
+            lightTheme ? 'bg-white/90 border-slate-200 text-slate-900 shadow-sm' : 'bg-slate-900/90 border-slate-800 text-white'
+          }`}>
             <div className="flex items-center space-x-3">
-              <button onClick={() => setMobileSidebarOpen(true)} className="md:hidden p-2 rounded-lg text-slate-400 hover:bg-slate-800">
+              <button onClick={() => setMobileSidebarOpen(true)} className={`md:hidden p-2 rounded-lg transition ${
+                lightTheme ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
+              }`}>
                 <i className="fa-solid fa-bars text-lg"></i>
               </button>
               <div>
-                <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">{titlesMap[activeTab] || 'Vendor Dashboard'}</h1>
-                <p className="text-[11px] text-slate-400 hidden sm:block">Welcome back, <span className="text-slate-200 font-semibold">{vendorName}</span></p>
+                <h1 className={`text-base sm:text-lg font-bold tracking-tight ${lightTheme ? 'text-slate-900' : 'text-white'}`}>{titlesMap[activeTab] || 'Vendor Dashboard'}</h1>
+                <p className={`text-[11px] hidden sm:block ${lightTheme ? 'text-slate-500' : 'text-slate-400'}`}>Welcome back, <span className={`font-semibold ${lightTheme ? 'text-slate-800' : 'text-slate-200'}`}>{vendorName}</span></p>
               </div>
             </div>
 
@@ -957,7 +891,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     if (activeTab !== 'tenders-available') setActiveTab('tenders-available');
                   }}
                   placeholder="Search by tender ID, title or organization..."
-                  className="w-full pl-9 pr-4 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-teal-500 transition font-mono"
+                  className={`w-full pl-9 pr-4 py-1.5 border rounded-lg text-xs transition font-mono focus:outline-none focus:border-teal-500 ${
+                    lightTheme 
+                      ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400' 
+                      : 'bg-slate-950 border-slate-800 text-slate-200 placeholder-slate-500'
+                  }`}
                 />
               </div>
             </div>
@@ -967,21 +905,15 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               {/* Web3 Connect Wallet Button */}
               <WalletConnectButton user={currentUser} onToast={onToast} lightTheme={lightTheme} />
 
-              <div className="hidden xl:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-teal-950 border border-teal-500/30 text-[10px] font-mono text-teal-300">
-                <i className="fa-solid fa-lock text-teal-400"></i>
-                <span>🔐 End-to-End ZK Protected</span>
-              </div>
-
               <button
                 onClick={() => setLightTheme(!lightTheme)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 border shadow-sm ${lightTheme
+                className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 border shadow-sm ${lightTheme
                     ? 'bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20'
                     : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white'
                   }`}
                 title={lightTheme ? "Switch to Dark Theme" : "Switch to Light Theme"}
               >
                 <i className={`fa-solid ${lightTheme ? 'fa-sun text-amber-500' : 'fa-moon text-indigo-400'} text-sm transition-transform duration-300 ${lightTheme ? 'rotate-180' : ''}`}></i>
-                <span className="text-xs font-medium font-sans hidden sm:inline">{lightTheme ? 'Light Mode' : 'Dark Mode'}</span>
               </button>
 
               {/* Notification Bell Dropdown */}
@@ -1042,17 +974,107 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                 )}
               </div>
 
-              {/* Vendor Profile Avatar */}
-              <div className="relative flex items-center space-x-2 border-l border-slate-800 pl-3">
-                <button onClick={() => handleSwitchTab('company-profile')} className="flex items-center space-x-2 focus:outline-none group">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-teal-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow">
+              {/* Organization / User Profile Dropdown Pill */}
+              <div className="relative" ref={profileDropdownRef}>
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className={`p-0.5 rounded-full border transition-all duration-200 shadow-sm hover:scale-105 cursor-pointer ${
+                    lightTheme
+                      ? 'bg-white border-slate-300 hover:border-teal-500 shadow-slate-200'
+                      : 'bg-slate-900 border-slate-700 hover:border-teal-400'
+                  }`}
+                  title={`Organization Profile: ${vendorName} (${rawVendorId || 'ORG001'})`}
+                >
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-teal-600 via-emerald-500 to-indigo-600 text-white font-mono text-xs font-extrabold flex items-center justify-center shadow-md border border-teal-400/40">
                     {getVendorInitials(vendorName)}
                   </div>
-                  <div className="hidden sm:block text-left">
-                    <span className="block text-xs font-semibold text-white group-hover:text-teal-400 transition truncate max-w-[120px]">{vendorName}</span>
-                    <span className="block text-[9px] text-slate-400 font-mono">{vendorId || 'Verified Prover'}</span>
-                  </div>
                 </button>
+
+                {/* Organization Flyout Dropdown */}
+                {profileDropdownOpen && (
+                  <div className={`absolute right-0 mt-2 w-72 p-3.5 rounded-2xl border shadow-2xl z-50 space-y-3 font-sans text-xs ${
+                    lightTheme ? 'bg-white border-slate-200 text-slate-900 shadow-slate-300/50' : 'bg-slate-900 border-slate-800 text-white'
+                  }`}>
+                    <div className={`p-3 rounded-xl border space-y-2 ${
+                      lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+                    }`}>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-teal-600 via-emerald-500 to-indigo-600 text-white font-mono text-sm font-extrabold flex items-center justify-center shadow-md border-2 border-teal-500/40 shrink-0">
+                          {getVendorInitials(vendorName)}
+                        </div>
+                        <div className="overflow-hidden">
+                          <h4 className={`font-bold text-xs truncate ${lightTheme ? 'text-slate-900' : 'text-white'}`}>{vendorName}</h4>
+                          <p className="text-[10px] font-mono text-teal-500 font-semibold truncate">{orgData.organizationType || 'Registered Organization'}</p>
+                          <p className="text-[9px] text-slate-400 truncate mt-0.5">{rawVendorId || 'Org ID: ORG001'}</p>
+                        </div>
+                      </div>
+
+                      <div className={`pt-2 flex items-center justify-between text-[10px] font-mono border-t ${
+                        lightTheme ? 'border-slate-200' : 'border-slate-800'
+                      }`}>
+                        <span className={lightTheme ? 'text-slate-500' : 'text-slate-400'}>Verification:</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          orgData.verificationStatus === 'VERIFIED' 
+                            ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30' 
+                            : 'bg-amber-500/20 text-amber-600 border border-amber-500/30'
+                        }`}>
+                          {orgData.verificationStatus || 'VERIFIED'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => {
+                          handleSwitchTab('org-profile');
+                          setProfileDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-xl transition font-medium ${
+                          lightTheme ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-slate-800 text-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <i className="fa-solid fa-building text-teal-500"></i>
+                          <span>Organization Profile</span>
+                        </div>
+                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full font-bold ${
+                          getOrgCompletionStats(orgData).isComplete ? 'bg-emerald-500/20 text-emerald-600' : 'bg-amber-500/20 text-amber-600'
+                        }`}>
+                          {getOrgCompletionStats(orgData).percentage}%
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          handleSwitchTab('profile');
+                          setProfileDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center space-x-2 p-2 rounded-xl transition font-medium ${
+                          lightTheme ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-slate-800 text-slate-200'
+                        }`}
+                      >
+                        <i className="fa-solid fa-user-gear text-indigo-500"></i>
+                        <span>Account Settings</span>
+                      </button>
+                    </div>
+
+                    <div className={`pt-1 border-t ${lightTheme ? 'border-slate-100' : 'border-slate-800'}`}>
+                      <button
+                        onClick={() => {
+                          setProfileDropdownOpen(false);
+                          handleLogoutClick();
+                        }}
+                        className={`w-full p-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition border ${
+                          lightTheme
+                            ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                            : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20'
+                        }`}
+                      >
+                        <i className="fa-solid fa-right-from-bracket"></i> Log Out Account
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -1612,8 +1634,121 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                   vendorName={vendorName}
                   onBack={() => handleSwitchTab('active-tenders')}
                   onBidSuccess={() => handleSwitchTab('bidding-my-bids')}
+                  onSaveDraft={() => handleSwitchTab('bidding-drafts')}
                   onToast={triggerToast}
                 />
+              );
+            })()}
+
+            {/* TAB: SAVED DRAFT BIDS */}
+            {activeTab === 'bidding-drafts' && (() => {
+              const draftsKey = `zk_vendor_drafts_${vendorId}`;
+              let savedDrafts = [];
+              try {
+                const raw = localStorage.getItem(draftsKey);
+                if (raw) savedDrafts = JSON.parse(raw);
+              } catch (e) {
+                savedDrafts = [];
+              }
+
+              const handleResumeDraft = (draft) => {
+                const matchingTender = tenders.find(t => t.id === draft.tenderId || t.tenderId === draft.tenderId) || {
+                  id: draft.tenderId,
+                  title: draft.tenderTitle
+                };
+                setSelectedTender(matchingTender);
+                handleSwitchTab('bidding-submit');
+              };
+
+              const handleDeleteDraft = (draftId) => {
+                try {
+                  localStorage.removeItem(`zk_bid_draft_${draftId}_${vendorId}`);
+                  const remaining = savedDrafts.filter(d => d.tenderId !== draftId);
+                  localStorage.setItem(draftsKey, JSON.stringify(remaining));
+                  triggerToast('Draft bid removed from directory.', 'info');
+                  handleSwitchTab('bidding-drafts');
+                } catch (e) {
+                  console.error(e);
+                }
+              };
+
+              return (
+                <div className="space-y-6 font-sans">
+                  <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                      <div>
+                        <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+                          <i className="fa-solid fa-file-pen text-amber-400"></i>
+                          <span>Saved Draft Applications</span>
+                        </h2>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Incomplete tender application drafts saved locally. Resume anytime to complete zero-knowledge proof generation and final submission.
+                        </p>
+                      </div>
+                      <span className="px-3 py-1 bg-amber-500/20 text-amber-300 font-mono text-xs rounded-xl border border-amber-500/30 font-bold self-start sm:self-auto">
+                        {savedDrafts.length} Saved {savedDrafts.length === 1 ? 'Draft' : 'Drafts'}
+                      </span>
+                    </div>
+
+                    {savedDrafts.length === 0 ? (
+                      <div className="py-12 text-center space-y-4">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center mx-auto text-slate-500 text-xl">
+                          <i className="fa-solid fa-folder-open"></i>
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-base font-bold text-white">No Saved Draft Bids Found</h3>
+                          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                            When you start a tender application, click <strong>"Make Draft"</strong> at any process step to save your work here.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleSwitchTab('tenders-available')}
+                          className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl shadow-lg transition inline-flex items-center space-x-2"
+                        >
+                          <i className="fa-solid fa-list-check"></i>
+                          <span>Browse Available Tenders &rarr;</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {savedDrafts.map((draft, idx) => (
+                          <div key={idx} className="p-5 bg-slate-950 rounded-2xl border border-slate-800 space-y-4 hover:border-slate-700 transition shadow-xl flex flex-col justify-between">
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-mono text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                  Step {draft.step || 1} Saved
+                                </span>
+                                <span className="text-[10px] font-mono text-slate-500">
+                                  {draft.savedAt ? new Date(draft.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently'}
+                                </span>
+                              </div>
+                              <h3 className="font-bold text-white text-sm line-clamp-1">{draft.tenderTitle || draft.tenderId}</h3>
+                              <p className="text-xs font-mono text-slate-400">Ref: <span className="text-teal-400">{draft.tenderId}</span></p>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 gap-2">
+                              <button
+                                onClick={() => handleDeleteDraft(draft.tenderId)}
+                                className="px-3 py-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 rounded-xl text-xs font-semibold border border-slate-800 transition flex items-center space-x-1"
+                              >
+                                <i className="fa-solid fa-trash-can"></i>
+                                <span>Discard</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleResumeDraft(draft)}
+                                className="px-4 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center space-x-1.5"
+                              >
+                                <span>Resume Application</span>
+                                <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               );
             })()}
 
@@ -1731,23 +1866,33 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               </div>
             )}
 
-            {/* VENDOR ORGANIZATION PROFILE TAB */}
-            {activeTab === 'org-profile' && (
+            {/* UNIFIED VENDOR ORGANIZATION & USER ACCOUNT PROFILE TAB */}
+            {(activeTab === 'org-profile' || activeTab === 'company-profile' || activeTab === 'profile') && (
               <div className="space-y-6 text-xs font-sans">
                 {/* Header & Completion Card */}
-                <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-6 shadow-xl space-y-4">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div className={`rounded-xl border p-6 shadow-xl space-y-4 ${
+                  lightTheme ? 'bg-white border-slate-200 text-slate-900 shadow-slate-200' : 'bg-slate-900/90 border-slate-800 text-white'
+                }`}>
+                  <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 ${
+                    lightTheme ? 'border-slate-200' : 'border-slate-800'
+                  }`}>
                     <div>
                       <div className="flex items-center space-x-3">
-                        <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-                          <i className="fa-solid fa-building text-teal-400"></i>
-                          <span>Vendor Organization Profile</span>
+                        <h2 className={`text-lg font-bold flex items-center space-x-2 ${lightTheme ? 'text-slate-900' : 'text-white'}`}>
+                          <i className="fa-solid fa-building-user text-teal-500"></i>
+                          <span>Organization & Account Profile</span>
                         </h2>
-                        <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold ${orgData.verificationStatus === 'VERIFIED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : orgData.verificationStatus === 'REJECTED' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}`}>
-                          {orgData.verificationStatus}
+                        <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold ${
+                          orgData.verificationStatus === 'VERIFIED' 
+                            ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30' 
+                            : orgData.verificationStatus === 'REJECTED' 
+                              ? 'bg-red-500/20 text-red-600 border border-red-500/30' 
+                              : 'bg-amber-500/20 text-amber-600 border border-amber-500/30'
+                        }`}>
+                          {orgData.verificationStatus || 'VERIFIED'}
                         </span>
                       </div>
-                      <p className="text-slate-400 text-xs mt-1">Official corporate, tax, contact, and address credentials stored in MongoDB</p>
+                      <p className={`text-xs mt-1 ${lightTheme ? 'text-slate-500' : 'text-slate-400'}`}>Official corporate, tax, contact, representative, and user account credentials stored securely in MongoDB</p>
                     </div>
 
                     <div className="flex items-center space-x-3">
@@ -1756,7 +1901,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                           <button
                             type="button"
                             onClick={() => setOrgEditMode(false)}
-                            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition"
+                            className={`px-4 py-2 font-semibold rounded-lg transition ${
+                              lightTheme ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                            }`}
                           >
                             Cancel
                           </button>
@@ -1766,7 +1913,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                             disabled={orgSaving}
                             className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-600/20 transition flex items-center space-x-2"
                           >
-                            {orgSaving ? 'Saving...' : 'Save Organization Profile'}
+                            {orgSaving ? 'Saving...' : 'Save Profile Changes'}
                           </button>
                         </>
                       ) : (
@@ -1776,7 +1923,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                           className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg transition flex items-center space-x-2"
                         >
                           <i className="fa-solid fa-pen-to-square"></i>
-                          <span>Edit Organization Profile</span>
+                          <span>Edit Profile Details</span>
                         </button>
                       )}
                     </div>
@@ -1788,70 +1935,149 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     return (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-mono text-slate-300 font-bold flex items-center space-x-2">
+                          <span className={`font-mono font-bold flex items-center space-x-2 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
                             <span>Profile Completion:</span>
-                            <span className={stats.isComplete ? 'text-emerald-400 font-extrabold' : 'text-amber-400 font-extrabold'}>{stats.percentage}%</span>
+                            <span className={stats.isComplete ? 'text-emerald-500 font-extrabold' : 'text-amber-500 font-extrabold'}>{stats.percentage}%</span>
                           </span>
-                          <span className="font-mono text-slate-400 text-[11px]">({stats.filledCount} of {stats.totalRequired} required fields complete)</span>
+                          <span className={`font-mono text-[11px] ${lightTheme ? 'text-slate-400' : 'text-slate-400'}`}>({stats.filledCount} of {stats.totalRequired} required fields complete)</span>
                         </div>
-                        <div className="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800">
+                        <div className={`w-full rounded-full h-3 p-0.5 border ${lightTheme ? 'bg-slate-100 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${stats.isComplete ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-teal-400'}`}
                             style={{ width: `${stats.percentage}%` }}
                           ></div>
                         </div>
-                        {!stats.isComplete && (
-                          <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center space-x-2 text-amber-300 text-xs">
-                            <i className="fa-solid fa-triangle-exclamation"></i>
-                            <span>Complete your organization profile before participating in tenders.</span>
-                          </div>
-                        )}
                       </div>
                     );
                   })()}
                 </div>
 
-                {/* Main Form Body */}
+                {/* Form Body */}
                 <form onSubmit={handleSaveOrgProfile} className="space-y-6">
 
-                  {/* 1. COMPANY INFORMATION */}
-                  <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-6 shadow-xl space-y-4">
-                    <h3 className="text-sm font-bold text-white border-b border-slate-800 pb-2.5 flex items-center space-x-2">
-                      <i className="fa-solid fa-building-columns text-teal-400"></i>
-                      <span>1. Company Information</span>
+                  {/* 1. REPRESENTATIVE & USER ACCOUNT DETAILS */}
+                  <div className={`rounded-xl border p-6 shadow-xl space-y-4 ${
+                    lightTheme ? 'bg-white border-slate-200 text-slate-900 shadow-slate-200' : 'bg-slate-900/90 border-slate-800 text-white'
+                  }`}>
+                    <h3 className={`text-sm font-bold border-b pb-2.5 flex items-center justify-between ${
+                      lightTheme ? 'border-slate-200' : 'border-slate-800'
+                    }`}>
+                      <div className="flex items-center space-x-2">
+                        <i className="fa-solid fa-user-gear text-indigo-500"></i>
+                        <span>1. Representative & User Account Details</span>
+                      </div>
+                      <span className="text-[10px] font-mono bg-indigo-500/10 text-indigo-600 border border-indigo-500/30 px-2.5 py-0.5 rounded-full font-bold">
+                        User Role: {profileRole || 'VENDOR'}
+                      </span>
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-slate-400 font-medium mb-1">Organization ID (Auto-Generated)</label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>Representative Full Name <span className="text-red-400">*</span></label>
                         <input
                           type="text"
-                          value={orgData.organizationId || 'Auto-generated on save'}
-                          disabled
-                          className="w-full p-2.5 bg-slate-950/60 border border-slate-800/60 rounded-lg text-teal-400 font-mono text-xs cursor-not-allowed"
+                          disabled={!orgEditMode}
+                          value={profileName}
+                          onChange={(e) => {
+                            setProfileName(e.target.value);
+                            setOrgData({ ...orgData, contactPerson: e.target.value });
+                          }}
+                          placeholder="e.g. Vikas Sharma"
+                          className={`w-full p-2.5 border rounded-lg text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
+                          required
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-medium mb-1">Company Name <span className="text-red-400">*</span></label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>Email Address (Login Account)</label>
+                        <input
+                          type="email"
+                          value={profileEmail}
+                          disabled
+                          placeholder="user@example.com"
+                          className={`w-full p-2.5 border rounded-lg text-xs cursor-not-allowed ${
+                            lightTheme ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-slate-950/60 border-slate-800/60 text-slate-400'
+                          }`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>Contact Phone Number</label>
+                        <input
+                          type="text"
+                          disabled={!orgEditMode}
+                          value={profilePhone || orgData.contactPhone || orgData.phone || ''}
+                          onChange={(e) => {
+                            setProfilePhone(e.target.value);
+                            setOrgData({ ...orgData, contactPhone: e.target.value, phone: e.target.value });
+                          }}
+                          placeholder="e.g. +91 98765 43210"
+                          className={`w-full p-2.5 border rounded-lg text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. CORPORATE & TAX CREDENTIALS */}
+                  <div className={`rounded-xl border p-6 shadow-xl space-y-4 ${
+                    lightTheme ? 'bg-white border-slate-200 text-slate-900 shadow-slate-200' : 'bg-slate-900/90 border-slate-800 text-white'
+                  }`}>
+                    <h3 className={`text-sm font-bold border-b pb-2.5 flex items-center space-x-2 ${
+                      lightTheme ? 'border-slate-200' : 'border-slate-800'
+                    }`}>
+                      <i className="fa-solid fa-building-columns text-teal-500"></i>
+                      <span>2. Corporate & Tax Credentials</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-400'}`}>Organization ID</label>
+                        <input
+                          type="text"
+                          value={orgData.organizationId || profileOrgId || 'ORG001'}
+                          disabled
+                          className={`w-full p-2.5 border rounded-lg font-mono text-xs cursor-not-allowed text-teal-600 font-bold ${
+                            lightTheme ? 'bg-slate-100 border-slate-200' : 'bg-slate-950/60 border-slate-800/60'
+                          }`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>Company / Legal Entity Name <span className="text-red-400">*</span></label>
                         <input
                           type="text"
                           disabled={!orgEditMode}
                           value={orgData.companyName}
                           onChange={(e) => setOrgData({ ...orgData, companyName: e.target.value })}
                           placeholder="e.g. ABC Technologies Pvt. Ltd."
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                           required
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-medium mb-1">Organization Type <span className="text-red-400">*</span></label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>Organization Type <span className="text-red-400">*</span></label>
                         <select
                           disabled={!orgEditMode}
                           value={orgData.organizationType}
                           onChange={(e) => setOrgData({ ...orgData, organizationType: e.target.value })}
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                           required
                         >
                           <option value="Private Limited">Private Limited</option>
@@ -1866,44 +2092,59 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-medium mb-1">Registration Number <span className="text-red-400">*</span></label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>Registration Number <span className="text-red-400">*</span></label>
                         <input
                           type="text"
                           disabled={!orgEditMode}
                           value={orgData.registrationNumber}
                           onChange={(e) => setOrgData({ ...orgData, registrationNumber: e.target.value })}
                           placeholder="e.g. REG-892019"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg font-mono text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                           required
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-medium mb-1">GSTIN Number</label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>GSTIN Number</label>
                         <input
                           type="text"
                           disabled={!orgEditMode}
-                          value={orgData.gstNumber}
-                          onChange={(e) => setOrgData({ ...orgData, gstNumber: e.target.value.toUpperCase() })}
+                          value={orgData.gstNumber || profileGst}
+                          onChange={(e) => {
+                            setOrgData({ ...orgData, gstNumber: e.target.value.toUpperCase() });
+                            setProfileGst(e.target.value.toUpperCase());
+                          }}
                           placeholder="e.g. 27AABCU9603R1ZM"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg font-mono text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-medium mb-1">PAN Number</label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>PAN Card Number</label>
                         <input
                           type="text"
                           disabled={!orgEditMode}
                           value={orgData.panNumber}
                           onChange={(e) => setOrgData({ ...orgData, panNumber: e.target.value.toUpperCase() })}
                           placeholder="e.g. ABCDE1234F"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg font-mono text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-medium mb-1">
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
                           CIN Number {(orgData.organizationType === 'Private Limited' || orgData.organizationType === 'Public Limited') && <span className="text-red-400">* (Req)</span>}
                         </label>
                         <input
@@ -1912,13 +2153,17 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                           value={orgData.cinNumber}
                           onChange={(e) => setOrgData({ ...orgData, cinNumber: e.target.value.toUpperCase() })}
                           placeholder="e.g. U72200MH2020PTC123456"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg font-mono text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                           required={orgData.organizationType === 'Private Limited' || orgData.organizationType === 'Public Limited'}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-medium mb-1">Year Established</label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>Year Established</label>
                         <input
                           type="number"
                           disabled={!orgEditMode}
@@ -1927,33 +2172,25 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                           min="1800"
                           max={new Date().getFullYear()}
                           placeholder="e.g. 2018"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-medium mb-1">Company Size</label>
-                        <select
-                          disabled={!orgEditMode}
-                          value={orgData.companySize}
-                          onChange={(e) => setOrgData({ ...orgData, companySize: e.target.value })}
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                        >
-                          <option value="Micro">Micro (1-10 employees)</option>
-                          <option value="Small">Small (11-50 employees)</option>
-                          <option value="Medium">Medium (51-250 employees)</option>
-                          <option value="Large">Large (251-1000 employees)</option>
-                          <option value="Enterprise">Enterprise (1000+ employees)</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">Business Category <span className="text-red-400">*</span></label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>Business Category <span className="text-red-400">*</span></label>
                         <select
                           disabled={!orgEditMode}
                           value={orgData.businessCategory}
                           onChange={(e) => setOrgData({ ...orgData, businessCategory: e.target.value })}
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                           required
                         >
                           <option value="IT & Software">IT & Software</option>
@@ -1970,109 +2207,40 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                     </div>
                   </div>
 
-                  {/* 2. CONTACT INFORMATION */}
-                  <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-6 shadow-xl space-y-4">
-                    <h3 className="text-sm font-bold text-white border-b border-slate-800 pb-2.5 flex items-center space-x-2">
-                      <i className="fa-solid fa-address-book text-teal-400"></i>
-                      <span>2. Contact Information</span>
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">Contact Person Name <span className="text-red-400">*</span></label>
-                        <input
-                          type="text"
-                          disabled={!orgEditMode}
-                          value={orgData.contactPerson}
-                          onChange={(e) => setOrgData({ ...orgData, contactPerson: e.target.value })}
-                          placeholder="e.g. Vikas Sharma"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">Designation <span className="text-red-400">*</span></label>
-                        <select
-                          disabled={!orgEditMode}
-                          value={orgData.designation}
-                          onChange={(e) => setOrgData({ ...orgData, designation: e.target.value })}
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required
-                        >
-                          <option value="Managing Director">Managing Director</option>
-                          <option value="CEO">CEO</option>
-                          <option value="Proprietor">Proprietor</option>
-                          <option value="Manager">Manager</option>
-                          <option value="Tender Officer">Tender Officer</option>
-                          <option value="Authorized Representative">Authorized Representative</option>
-                          <option value="Other">Other</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">Email Address <span className="text-red-400">*</span></label>
-                        <input
-                          type="email"
-                          disabled={!orgEditMode}
-                          value={orgData.email}
-                          onChange={(e) => setOrgData({ ...orgData, email: e.target.value })}
-                          placeholder="company@domain.com"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">Phone Number <span className="text-red-400">*</span></label>
-                        <input
-                          type="text"
-                          disabled={!orgEditMode}
-                          value={orgData.phone}
-                          onChange={(e) => setOrgData({ ...orgData, phone: e.target.value })}
-                          placeholder="e.g. +91 98765 43210"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">Website URL</label>
-                        <input
-                          type="text"
-                          disabled={!orgEditMode}
-                          value={orgData.website}
-                          onChange={(e) => setOrgData({ ...orgData, website: e.target.value })}
-                          placeholder="e.g. https://www.company.com"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
                   {/* 3. REGISTERED ADDRESS */}
-                  <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-6 shadow-xl space-y-4">
-                    <h3 className="text-sm font-bold text-white border-b border-slate-800 pb-2.5 flex items-center space-x-2">
-                      <i className="fa-solid fa-location-dot text-teal-400"></i>
+                  <div className={`rounded-xl border p-6 shadow-xl space-y-4 ${
+                    lightTheme ? 'bg-white border-slate-200 text-slate-900 shadow-slate-200' : 'bg-slate-900/90 border-slate-800 text-white'
+                  }`}>
+                    <h3 className={`text-sm font-bold border-b pb-2.5 flex items-center space-x-2 ${
+                      lightTheme ? 'border-slate-200' : 'border-slate-800'
+                    }`}>
+                      <i className="fa-solid fa-location-dot text-teal-500"></i>
                       <span>3. Registered Business Address</span>
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
-                        <label className="block text-slate-300 font-medium mb-1">Full Registered Address <span className="text-red-400">*</span></label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>Full Registered Address <span className="text-red-400">*</span></label>
                         <textarea
                           disabled={!orgEditMode}
-                          value={orgData.address}
-                          onChange={(e) => setOrgData({ ...orgData, address: e.target.value })}
+                          value={orgData.address || profileAddress}
+                          onChange={(e) => {
+                            setOrgData({ ...orgData, address: e.target.value });
+                            setProfileAddress(e.target.value);
+                          }}
                           placeholder="e.g. Suite 402, Corporate Tech Park, Sector 5"
                           rows={2}
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                           required
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-medium mb-1">State / Union Territory <span className="text-red-400">*</span></label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>State / Union Territory <span className="text-red-400">*</span></label>
                         <select
                           disabled={!orgEditMode}
                           value={orgData.state}
@@ -2085,7 +2253,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                               district: availableDistricts[0]
                             });
                           }}
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                           required
                         >
                           {Object.keys(indianStatesAndDistricts).map(st => (
@@ -2095,87 +2267,21 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-medium mb-1">District <span className="text-red-400">*</span></label>
-                        <select
-                          disabled={!orgEditMode}
-                          value={orgData.district}
-                          onChange={(e) => setOrgData({ ...orgData, district: e.target.value })}
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required
-                        >
-                          {(indianStatesAndDistricts[orgData.state] || ["Main District", "Other"]).map(d => (
-                            <option key={d} value={d}>{d}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">City <span className="text-red-400">*</span></label>
-                        <input
-                          type="text"
-                          disabled={!orgEditMode}
-                          value={orgData.city}
-                          onChange={(e) => setOrgData({ ...orgData, city: e.target.value })}
-                          placeholder="e.g. Mumbai"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">Pincode (6 digits) <span className="text-red-400">*</span></label>
+                        <label className={`block font-medium mb-1 ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>Pincode (6 digits) <span className="text-red-400">*</span></label>
                         <input
                           type="text"
                           disabled={!orgEditMode}
                           value={orgData.pincode}
                           onChange={(e) => setOrgData({ ...orgData, pincode: e.target.value })}
                           placeholder="e.g. 400001"
-                          className={`w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs ${orgEditMode ? 'focus:border-teal-500 focus:outline-none' : 'cursor-not-allowed text-slate-300'}`}
+                          className={`w-full p-2.5 border rounded-lg font-mono text-xs ${
+                            orgEditMode 
+                              ? (lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500' : 'bg-slate-950 border-slate-800 text-white focus:border-teal-500') 
+                              : (lightTheme ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed' : 'bg-slate-950/60 border-slate-800 text-slate-400 cursor-not-allowed')
+                          }`}
                           required
                         />
                       </div>
-                    </div>
-                  </div>
-
-                  {/* 4. VERIFICATION INFORMATION */}
-                  <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-6 shadow-xl space-y-4">
-                    <h3 className="text-sm font-bold text-white border-b border-slate-800 pb-2.5 flex items-center space-x-2">
-                      <i className="fa-solid fa-shield-check text-teal-400"></i>
-                      <span>4. Government Verification & Account Status</span>
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
-                      <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                        <span className="text-slate-400 block text-[10px]">Verification Status</span>
-                        <span className={`inline-block px-2.5 py-0.5 rounded font-bold text-xs ${orgData.verificationStatus === 'VERIFIED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : orgData.verificationStatus === 'REJECTED' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
-                          {orgData.verificationStatus}
-                        </span>
-                      </div>
-
-                      <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                        <span className="text-slate-400 block text-[10px]">Verified Date</span>
-                        <span className="text-slate-200 font-bold block">
-                          {orgData.verifiedAt ? new Date(orgData.verifiedAt).toLocaleDateString('en-IN') : 'Not yet verified'}
-                        </span>
-                      </div>
-
-                      <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                        <span className="text-slate-400 block text-[10px]">Account Status</span>
-                        <span className={`inline-block px-2.5 py-0.5 rounded font-bold text-xs ${orgData.accountStatus === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
-                          {orgData.accountStatus}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ZKP Privacy Banner */}
-                  <div className="p-4 bg-teal-500/10 border border-teal-500/20 rounded-xl text-teal-300 text-xs flex items-start space-x-3">
-                    <i className="fa-solid fa-lock text-teal-400 text-base mt-0.5 shrink-0"></i>
-                    <div>
-                      <h4 className="font-bold text-teal-200">Zero-Knowledge Privacy Note</h4>
-                      <p className="text-[11px] text-slate-300 leading-relaxed mt-0.5">
-                        Confidential financial information (turnover, bank balance, net worth) is kept strictly isolated in the ZKP Financial Module and is never stored in this general organization profile.
-                      </p>
                     </div>
                   </div>
 
@@ -2184,7 +2290,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                       <button
                         type="button"
                         onClick={() => setOrgEditMode(false)}
-                        className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition"
+                        className={`px-5 py-2.5 font-semibold rounded-lg transition ${
+                          lightTheme ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                        }`}
                       >
                         Cancel
                       </button>
@@ -2193,121 +2301,10 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                         disabled={orgSaving}
                         className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-600/20 transition flex items-center space-x-2"
                       >
-                        {orgSaving ? 'Saving Changes to MongoDB...' : 'Save Organization Profile'}
+                        {orgSaving ? 'Saving Changes to MongoDB...' : 'Save Profile Changes'}
                       </button>
                     </div>
                   )}
-                </form>
-              </div>
-            )}
-
-            {/* VIEW & EDIT COMPANY PROFILE TAB */}
-            {activeTab === 'company-profile' && (
-              <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-6 shadow-xl space-y-6 text-xs font-sans">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Company & User Profile</h2>
-                    <p className="text-slate-400 text-xs">View and update your account details stored in MongoDB</p>
-                  </div>
-                  <span className="px-3 py-1 bg-teal-500/10 border border-teal-500/30 text-teal-400 text-[11px] font-mono rounded-full font-bold">
-                    Role: {profileRole}
-                  </span>
-                </div>
-
-                <form onSubmit={handleSaveProfile} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-slate-300 font-medium mb-1">Full Name / Officer Name</label>
-                      <input
-                        type="text"
-                        value={profileName}
-                        onChange={(e) => setProfileName(e.target.value)}
-                        placeholder="e.g. Vikas Sharma"
-                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-300 font-medium mb-1">Email Address (Verified)</label>
-                      <input
-                        type="email"
-                        value={profileEmail}
-                        disabled
-                        placeholder="user@example.com"
-                        className="w-full p-2.5 bg-slate-950/60 border border-slate-800/60 rounded-lg text-slate-400 text-xs cursor-not-allowed"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-300 font-medium mb-1">Organization / Company Name</label>
-                      <input
-                        type="text"
-                        value={profileCompany}
-                        onChange={(e) => setProfileCompany(e.target.value)}
-                        placeholder="e.g. ABC Technologies Pvt. Ltd."
-                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-300 font-medium mb-1">Organization ID</label>
-                      <input
-                        type="text"
-                        value={profileOrgId}
-                        onChange={(e) => setProfileOrgId(e.target.value)}
-                        placeholder="e.g. ORG001"
-                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-teal-400 font-mono text-xs focus:border-teal-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-300 font-medium mb-1">Phone Number</label>
-                      <input
-                        type="text"
-                        value={profilePhone}
-                        onChange={(e) => setProfilePhone(e.target.value)}
-                        placeholder="e.g. +91 98765 43210"
-                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-300 font-medium mb-1">GSTIN / Tax ID</label>
-                      <input
-                        type="text"
-                        value={profileGst}
-                        onChange={(e) => setProfileGst(e.target.value)}
-                        placeholder="e.g. 27AABCU9603R1ZM"
-                        className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs focus:border-teal-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-300 font-medium mb-1">Registered Address</label>
-                    <textarea
-                      value={profileAddress}
-                      onChange={(e) => setProfileAddress(e.target.value)}
-                      placeholder="e.g. Corporate Tech Park, Sector 5, Cyber City"
-                      rows={2}
-                      className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:border-teal-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="pt-2 flex items-center justify-between">
-                    <div className="text-[11px] text-slate-400 font-mono">
-                      <span>Prover Key Status: </span>
-                      <span className="text-emerald-400 font-bold">Loaded (Groth16_Poseidon)</span>
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={profileSaving}
-                      className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-lg shadow-lg shadow-teal-600/20 transition flex items-center space-x-2"
-                    >
-                      {profileSaving ? 'Saving to MongoDB...' : 'Save Profile Changes'}
-                    </button>
-                  </div>
                 </form>
               </div>
             )}
@@ -2546,8 +2543,14 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
       {/* LOGOUT CONFIRMATION MODAL OVERLAY WITH BLUR */}
       {showLogoutModal && (
-        <div className="fixed inset-0 w-screen h-screen bg-slate-950/40 backdrop-blur-md z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-          <div className="bg-white/95 backdrop-blur-2xl border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 text-slate-900">
+        <div 
+          className="fixed inset-0 w-screen h-screen bg-slate-950/40 backdrop-blur-md z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+        >
+          <div 
+            className="bg-white/80 backdrop-blur-2xl border border-slate-200/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 text-slate-900"
+            style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+          >
             <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
               <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
                 <i className="fa-solid fa-triangle-exclamation text-lg text-rose-500"></i>
@@ -2558,7 +2561,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               </div>
             </div>
 
-            <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200 font-medium">
+            <p className="text-xs text-slate-700 leading-relaxed bg-slate-100/60 backdrop-blur-sm p-3.5 rounded-xl border border-slate-200/80 font-medium">
               Logging out will end your current active session on ZK-Tenders. You will need to log back in to access your vendor profile and bid submissions.
             </p>
 

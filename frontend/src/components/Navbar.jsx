@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Award, LogIn, LogOut, ChevronDown, Flag, BarChart2, Globe, HelpingHand, Landmark, KeyRound, FolderKanban, Info, CreditCard, LayoutDashboard, FileText, Search, X, ChevronRight, ShieldCheck } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 
-export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard }) {
+export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard, onGoHome }) {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -72,7 +72,14 @@ export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard })
             </label>
           </div>
 
-          <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+          <a
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onGoHome) onGoHome();
+            }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}
+          >
             <div className="logo-icon" style={{ background: '#2563EB', color: '#FFFFFF' }}>
               <Award size={24} />
             </div>

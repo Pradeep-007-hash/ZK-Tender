@@ -19,8 +19,10 @@ function hexToBytes(hex) {
  */
 function initializeAuthorityKeyPair() {
   if (!authorityKeyPair) {
-    authorityKeyPair = ml_dsa65.keygen();
-    console.log("[ML-DSA-65 SERVICE] Generated Authority Post-Quantum Key Pair successfully.");
+    const seedString = process.env.ML_DSA_AUTHORITY_SEED || "ZK_TENDER_ML_DSA_65_AUTHORITY_SEED_SECRET_2026";
+    const seedBytes = new Uint8Array(crypto.createHash("sha256").update(seedString).digest());
+    authorityKeyPair = ml_dsa65.keygen(seedBytes);
+    console.log("[ML-DSA-65 SERVICE] Generated Authority Post-Quantum Key Pair deterministically.");
   }
   return authorityKeyPair;
 }

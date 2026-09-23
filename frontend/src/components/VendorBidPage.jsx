@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Send, ShieldCheck, CheckCircle2, Award, Lock, ArrowLeft, 
-  ArrowRight, FileCheck, RefreshCw, AlertTriangle, Eye, Check, ChevronRight
+  ArrowRight, FileCheck, RefreshCw, AlertTriangle, Eye, Check, ChevronRight, Bookmark
 } from 'lucide-react';
 import DynamicCriterionRenderer from './vendor/DynamicCriterionRenderer';
 
-export default function VendorBidPage({ targetTender, vendorId = 'VEN-001', vendorName = 'Acme Infra Corp', onBack, onBidSuccess, onToast }) {
+export default function VendorBidPage({ targetTender, vendorId = 'VEN-001', vendorName = 'Acme Infra Corp', onBack, onBidSuccess, onSaveDraft, onToast }) {
   const [loadingPolicy, setLoadingPolicy] = useState(true);
   const [evaluationPolicy, setEvaluationPolicy] = useState(null);
   const [criteriaHash, setCriteriaHash] = useState('');
@@ -13,6 +13,7 @@ export default function VendorBidPage({ targetTender, vendorId = 'VEN-001', vend
   const [wizardStep, setWizardStep] = useState(1);
   const [responses, setResponses] = useState({});
   const [declarationChecked, setDeclarationChecked] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
 
   // ZKP Generation State
   const [isGeneratingProof, setIsGeneratingProof] = useState(false);
@@ -70,6 +71,82 @@ export default function VendorBidPage({ targetTender, vendorId = 'VEN-001', vend
     return () => { isMounted = false; };
   }, [tenderId, targetTender]);
 
+  // Restore Saved Draft on Mount
+  useEffect(() => {
+    try {
+      const savedDraftStr = localStorage.getItem(`zk_bid_draft_${tenderId}_${vendorId}`);
+      if (savedDraftStr) {
+        const saved = JSON.parse(savedDraftStr);
+        if (saved.responses && Object.keys(saved.responses).length > 0) {
+          setResponses(saved.responses);
+        }
+        if (saved.wizardStep && saved.wizardStep > 1) {
+          setWizardStep(saved.wizardStep);
+        }
+        if (saved.declarationChecked) {
+          setDeclarationChecked(saved.declarationChecked);
+        }
+        if (onToast) {
+          onToast(`Restored saved draft for ${tenderTitle} (Process Step ${saved.wizardStep || 1})`, 'info');
+        }
+      }
+    } catch (e) {
+      console.warn('[RESTORE DRAFT NOTICE]', e);
+    }
+  }, [tenderId, vendorId]);
+
+  // Make Draft Click Handler — Opens Confirmation Modal Box
+  const handleMakeDraft = () => {
+    setShowDraftModal(true);
+  };
+
+  // Confirm Save & Redirect to Draft Tender Page Handler
+  const handleConfirmSaveDraft = () => {
+    try {
+      const draftData = {
+        tenderId,
+        tenderTitle,
+        vendorId,
+        vendorName,
+        wizardStep,
+        responses,
+        declarationChecked,
+        savedAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem(`zk_bid_draft_${tenderId}_${vendorId}`, JSON.stringify(draftData));
+
+      const existingDraftsStr = localStorage.getItem(`zk_vendor_drafts_${vendorId}`);
+      let drafts = existingDraftsStr ? JSON.parse(existingDraftsStr) : [];
+      drafts = drafts.filter(d => d.tenderId !== tenderId);
+      drafts.unshift({
+        tenderId,
+        tenderTitle,
+        step: wizardStep,
+        savedAt: new Date().toISOString(),
+        draftKey: `zk_bid_draft_${tenderId}_${vendorId}`
+      });
+      localStorage.setItem(`zk_vendor_drafts_${vendorId}`, JSON.stringify(drafts));
+
+      setShowDraftModal(false);
+
+      if (onToast) {
+        onToast(`Tender application saved to Draft Bids! Moving to Draft Tender page...`, 'success');
+      }
+
+      setTimeout(() => {
+        if (onSaveDraft) {
+          onSaveDraft();
+        } else if (onBack) {
+          onBack();
+        }
+      }, 500);
+    } catch (err) {
+      console.error('[MAKE DRAFT ERROR]', err);
+      if (onToast) onToast('Failed to save draft: ' + err.message, 'error');
+    }
+  };
+
   const handleCriterionResponseChange = (resp) => {
     setResponses(prev => ({
       ...prev,
@@ -80,6 +157,29 @@ export default function VendorBidPage({ targetTender, vendorId = 'VEN-001', vend
   // Convert responses state object to array
   const getResponsesArray = () => {
     return Object.values(responses);
+  };
+
+  // Step Wizard Navigation with Criteria Document Validation
+  const handleNextStep = () => {
+    if (wizardStep === 2) {
+      const criteriaList = evaluationPolicy?.criteria || [];
+      const missingDocCriteria = criteriaList.filter(crit => {
+        const critId = crit.criterionId || crit.id;
+        const resp = responses[critId];
+        const hasDoc = resp && resp.documents && resp.documents.length > 0 && resp.documents[0]?.fileHash;
+        return !hasDoc;
+      });
+
+      if (missingDocCriteria.length > 0) {
+        const missingNames = missingDocCriteria.map(c => c.name || 'Criteria Field').join(', ');
+        if (onToast) {
+          onToast(`Document submission required! Please upload supporting proof document for: ${missingNames}`, 'warning');
+        }
+        return;
+      }
+    }
+
+    setWizardStep(prev => prev + 1);
   };
 
   // 2. Generate ZKP Proof Handler
@@ -174,6 +274,7 @@ export default function VendorBidPage({ targetTender, vendorId = 'VEN-001', vend
       });
       const data = await response.json();
       if (data.success) {
+        localStorage.removeItem(`zk_bid_draft_${tenderId}_${vendorId}`);
         setIsSubmitted(true);
         if (onToast) onToast('Electronic Bid Successfully Encrypted & Registered!', 'success');
         if (onBidSuccess) onBidSuccess(data.bid);
@@ -196,11 +297,6 @@ export default function VendorBidPage({ targetTender, vendorId = 'VEN-001', vend
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div>
             <div className="flex items-center space-x-2">
-              {onBack && (
-                <button onClick={onBack} className="p-1 text-slate-400 hover:text-white rounded-lg transition mr-1">
-                  <ArrowLeft size={18} />
-                </button>
-              )}
               <h2 className="text-lg font-bold text-white flex items-center space-x-2">
                 <span>Electronic Bid Submission Wizard</span>
                 <span className="px-2.5 py-0.5 bg-teal-500/20 text-teal-300 font-mono text-xs rounded-full border border-teal-500/30">Dynamic Policy Engine</span>
@@ -210,7 +306,16 @@ export default function VendorBidPage({ targetTender, vendorId = 'VEN-001', vend
           </div>
 
           <div className="flex items-center space-x-2">
-            <span className="px-3 py-1 bg-slate-950 text-slate-300 font-mono text-xs rounded-xl border border-slate-800 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleMakeDraft}
+              className="px-3.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-mono text-xs rounded-xl border border-amber-500/40 font-bold transition flex items-center gap-1.5 shadow-sm"
+              title="Save current application progress as draft"
+            >
+              <Bookmark size={14} className="text-amber-400" />
+              <span>Make Draft</span>
+            </button>
+            <span className="px-3 py-1.5 bg-slate-950 text-slate-300 font-mono text-xs rounded-xl border border-slate-800 flex items-center gap-1.5">
               <ShieldCheck size={14} className="text-teal-400" /> Groth16 Prover
             </span>
           </div>
@@ -407,35 +512,98 @@ export default function VendorBidPage({ targetTender, vendorId = 'VEN-001', vend
             )}
 
             {/* NAVIGATION CONTROLS */}
-            <div className="pt-4 border-t border-slate-800 flex justify-between items-center font-sans">
-              {wizardStep > 1 && (
-                <button
-                  onClick={() => setWizardStep(prev => prev - 1)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
-                >
-                  <ArrowLeft size={14} /> Back
-                </button>
-              )}
+            <div className="pt-4 border-t border-slate-800 flex flex-wrap justify-between items-center gap-3 font-sans">
+              <div>
+                {wizardStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setWizardStep(prev => prev - 1)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                  >
+                    <ArrowLeft size={14} /> Back
+                  </button>
+                )}
+              </div>
 
-              {wizardStep < 4 && (
+              <div className="flex items-center space-x-2 ml-auto">
                 <button
-                  onClick={() => setWizardStep(prev => prev + 1)}
-                  className="ml-auto px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5 transition"
+                  type="button"
+                  onClick={handleMakeDraft}
+                  className="px-4 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 hover:border-amber-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md"
+                  title="Save draft for this step and resume later"
                 >
-                  Next Step <ArrowRight size={14} />
+                  <Bookmark size={14} className="text-amber-400" />
+                  <span>Make Draft</span>
                 </button>
-              )}
 
-              {wizardStep === 5 && (
-                <button
-                  onClick={handleSubmitFinalBid}
-                  className="ml-auto px-6 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-xl flex items-center gap-2 transition"
-                >
-                  <Send size={15} /> Submit Sealed Bid
-                </button>
-              )}
+                {wizardStep < 4 && (
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5 transition"
+                  >
+                    Next Step <ArrowRight size={14} />
+                  </button>
+                )}
+
+                {wizardStep === 5 && (
+                  <button
+                    type="button"
+                    onClick={handleSubmitFinalBid}
+                    className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-xl flex items-center gap-2 transition"
+                  >
+                    <Send size={15} /> Submit Sealed Bid
+                  </button>
+                )}
+              </div>
             </div>
+          </div>
+        )}
 
+        {/* CONFIRMATION MODAL FOR MAKE DRAFT */}
+        {showDraftModal && (
+          <div 
+            className="fixed inset-0 w-screen h-screen bg-slate-950/50 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in"
+            style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+          >
+            <div className="bg-slate-900/95 backdrop-blur-2xl border border-amber-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 text-white">
+              <div className="flex items-center space-x-3 border-b border-slate-800 pb-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 text-amber-400">
+                  <Bookmark size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Save Tender Application as Draft?</h3>
+                  <p className="text-xs text-amber-300 font-mono">Tender Ref: {tenderId}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs text-slate-300">
+                <p className="leading-relaxed">
+                  Your current application progress (<strong className="text-amber-300">Process Step {wizardStep}</strong>) and dynamic form inputs for <strong className="text-white">"{tenderTitle}"</strong> will be saved.
+                </p>
+                <p className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 font-mono">
+                  💡 You will be moved to the <span className="text-teal-400 font-bold">Draft Bids Directory</span> where you can review, resume, or modify your application at any time.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-2 border-t border-slate-800 font-sans">
+                <button
+                  type="button"
+                  onClick={() => setShowDraftModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSaveDraft}
+                  className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2 transition"
+                >
+                  <Bookmark size={14} />
+                  <span>Confirm & Move to Drafts &rarr;</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

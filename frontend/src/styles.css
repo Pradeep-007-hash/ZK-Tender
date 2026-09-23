@@ -1304,8 +1304,9 @@ a {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
   justify-content: center;

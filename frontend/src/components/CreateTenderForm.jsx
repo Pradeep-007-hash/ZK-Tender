@@ -5,6 +5,7 @@ import {
   DollarSign, Sliders, Lock, Upload, Save, Eye, Rocket, AlertCircle,
   ChevronRight, Building2, HelpCircle, Copy, Check, Plus, Trash2, Edit3, X, RefreshCw
 } from 'lucide-react';
+import NineSectionChecklist from './NineSectionChecklist';
 
 const TENDER_REGISTRY_CONTRACT_ADDRESS = "0xD796C483CdAea7389bBfC379Ed602f4BC8C9a994";
 const TENDER_REGISTRY_ABI = [
@@ -654,60 +655,14 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* SECTION NAVIGATION TRACKER (3 cols) */}
-        <div className="lg:col-span-3 space-y-2">
-          <div className={`rounded-2xl border p-4 shadow-2xl sticky top-20 backdrop-blur-xl transition-all duration-300 ${
-            lightTheme ? 'bg-white/80 border-slate-200 text-slate-900' : 'bg-white/10 border-white/20 text-white'
-          }`}>
-            <div className={`flex items-center justify-between border-b pb-3 mb-3 ${cardHeaderBorder}`}>
-              <span className={`font-bold text-xs uppercase tracking-wider font-mono ${cardTitleText}`}>9-Section Checklist</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                isFormFullyValid ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300' : 'bg-rose-500/20 text-rose-600 dark:text-rose-300'
-              }`}>
-                {isFormFullyValid ? '100% Validated' : `${validationErrors.length} Issues`}
-              </span>
-            </div>
-
-            <div className="space-y-1.5 max-h-[calc(100vh-220px)] overflow-y-auto pr-1 custom-scrollbar">
-              {sectionsList.map((sec) => {
-                const secErrors = validationErrors.filter(e => e.section === sec.id);
-                const hasError = secErrors.length > 0;
-
-                return (
-                  <button
-                    key={sec.id}
-                    onClick={() => scrollToSection(sec.id)}
-                    className={`w-full text-left p-2.5 rounded-xl transition flex items-center justify-between group ${
-                      activeSection === sec.id 
-                        ? 'bg-teal-600 text-white font-bold shadow-lg scale-[1.02]' 
-                        : lightTheme 
-                          ? 'text-slate-700 hover:bg-slate-100 hover:text-slate-900' 
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2.5 min-w-0">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono shrink-0 font-extrabold ${
-                        activeSection === sec.id 
-                          ? 'bg-white text-slate-950 shadow-md' 
-                          : hasError 
-                            ? 'bg-rose-500 text-white font-bold' 
-                            : lightTheme 
-                              ? 'bg-slate-200 text-slate-900 border border-slate-300 font-extrabold' 
-                              : 'bg-slate-700 text-white border border-slate-600 font-extrabold'
-                      }`}>
-                        {sec.id}
-                      </span>
-                      <span className="truncate text-xs font-semibold">{sec.name}</span>
-                    </div>
-                    {hasError ? (
-                      <AlertCircle size={14} className="text-rose-400 shrink-0" />
-                    ) : (
-                      <CheckCircle2 size={14} className={activeSection === sec.id ? 'text-white' : 'text-teal-500'} />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        <div className="lg:col-span-3 space-y-2 sticky top-20 self-start">
+          <NineSectionChecklist 
+            activeSection={activeSection}
+            validationErrors={validationErrors}
+            onSelectSection={(secId) => scrollToSection(secId)}
+            completedSections={sectionsList.filter(sec => sec.id < activeSection && !validationErrors.some(e => e.section === sec.id)).map(sec => sec.id)}
+            lightTheme={lightTheme}
+          />
         </div>
 
         {/* 12-SECTION FORM CONTAINER (6 cols) */}
