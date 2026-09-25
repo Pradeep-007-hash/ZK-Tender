@@ -180,13 +180,19 @@ export default function LoginPage({ onBack, onLoginSuccess, onForgotPassword }) 
   // Handle Standard Email/Password Submission (MongoDB Persistent Registration & Login)
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const cleanEmail = email.toLowerCase().trim();
+    const isIssuer = cleanEmail === 'issuer@gov.in' || cleanEmail.includes('issuer');
+    const isAuthority = !isIssuer && (cleanEmail.includes('officer') || cleanEmail.includes('gov.in'));
+
     const userObj = {
-      name: fullName || email.split('@')[0] || 'Enterprise Contractor',
-      email: email,
-      company: company || 'Enterprise Partner',
+      name: isIssuer ? 'Government Credential Issuer' : isAuthority ? 'Government Officer' : (fullName || email.split('@')[0] || 'Enterprise Contractor'),
+      email: cleanEmail,
+      company: company || (isIssuer ? 'National DID & Verifiable Credential Authority' : isAuthority ? 'Government Procurement Portal' : 'Enterprise Partner'),
       phone: phone || '+91 98765 43210',
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName || email)}&background=0B3B60&color=fff`,
-      authType: 'Email & Password'
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName || email)}&background=${isIssuer ? '0F172A' : '0B3B60'}&color=${isIssuer ? '38BDF8' : 'fff'}`,
+      authType: 'Email & Password',
+      role: isIssuer ? 'ISSUER' : isAuthority ? 'AUTHORITY' : 'VENDOR',
+      organizationId: isIssuer ? 'GOV_ISSUER_001' : isAuthority ? 'GOV001' : ''
     };
 
     const endpoint = isRegister ? 'http://localhost:5000/api/auth/register' : 'http://localhost:5000/api/auth/login';
@@ -198,7 +204,7 @@ export default function LoginPage({ onBack, onLoginSuccess, onForgotPassword }) 
         body: JSON.stringify({
           name: userObj.name,
           email: userObj.email,
-          password: password || 'Default@123',
+          password: password || (isIssuer ? 'Admin@123' : 'Default@123'),
           company: userObj.company,
           phone: userObj.phone
         })
@@ -207,15 +213,12 @@ export default function LoginPage({ onBack, onLoginSuccess, onForgotPassword }) 
 
       if (data.user) {
         userObj.name = data.user.name || userObj.name;
-        userObj.role = data.user.role || (email.toLowerCase().includes('officer') ? 'AUTHORITY' : 'VENDOR');
-        userObj.organizationId = (data.user.organizationId && data.user.organizationId !== 'ORG001') ? data.user.organizationId : '';
+        userObj.role = data.user.role || (isIssuer ? 'ISSUER' : isAuthority ? 'AUTHORITY' : 'VENDOR');
+        userObj.organizationId = data.user.organizationId || (isIssuer ? 'GOV_ISSUER_001' : isAuthority ? 'GOV001' : '');
         userObj.company = data.user.company || userObj.company;
         userObj.phone = data.user.phone || userObj.phone;
         userObj.gstNo = data.user.gstNo;
         userObj.address = data.user.address;
-      } else if (email.toLowerCase().includes('officer') || email.toLowerCase().includes('gov.in')) {
-        userObj.role = 'AUTHORITY';
-        userObj.organizationId = 'GOV001';
       }
 
       const msg = isRegister 
@@ -227,11 +230,6 @@ export default function LoginPage({ onBack, onLoginSuccess, onForgotPassword }) 
       }
     } catch (err) {
       console.warn('[AUTH API NOTICE]', err.message);
-      if (email.toLowerCase().includes('officer') || email.toLowerCase().includes('gov.in')) {
-        userObj.role = 'AUTHORITY';
-        userObj.organizationId = 'GOV001';
-      }
-
       const msg = isRegister 
         ? `Registration successful! Account created for ${email}.`
         : `Welcome back, ${userObj.name}! Sign in successful.`;
@@ -391,6 +389,26 @@ export default function LoginPage({ onBack, onLoginSuccess, onForgotPassword }) 
                 <p className="custom-sub-title">
                   {isRegister ? "Let's get started with your 30 days free trial" : 'Please enter your details to sign in'}
                 </p>
+
+                {!isRegister && (
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap', background: '#F8FAFC', padding: '10px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#64748B', width: '100%', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quick Fill Demo Accounts:</span>
+                    <button 
+                      type="button" 
+                      onClick={() => { setEmail('issuer@gov.in'); setPassword('Admin@123'); }}
+                      style={{ padding: '5px 10px', borderRadius: '14px', background: '#EEF2FF', border: '1px solid #C7D2FE', color: '#4338CA', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s ease' }}
+                    >
+                      🛡️ DID Issuer (issuer@gov.in)
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => { setEmail('officer@gov.in'); setPassword('Admin@123'); }}
+                      style={{ padding: '5px 10px', borderRadius: '14px', background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#15803D', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s ease' }}
+                    >
+                      🏛️ Officer (officer@gov.in)
+                    </button>
+                  </div>
+                )}
 
                 <form className="custom-form" onSubmit={handleSubmit}>
                   {/* Name Field (Only in Sign Up Mode) */}

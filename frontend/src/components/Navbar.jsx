@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Award, LogIn, LogOut, ChevronDown, Flag, BarChart2, Globe, HelpingHand, Landmark, KeyRound, FolderKanban, Info, CreditCard, LayoutDashboard, FileText, Search, X, ChevronRight, ShieldCheck } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 
-export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard, onGoHome }) {
+export default function Navbar({ user, onOpenLogin, onOpenIssuerLogin, onLogout, onOpenDashboard, onGoHome }) {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -34,6 +34,7 @@ export default function Navbar({ user, onOpenLogin, onLogout, onOpenDashboard, o
   const headerMenuItems = [
     { title: 'Indian Tenders', icon: Flag, link: 'https://www.tenderdetail.com/Indian-Tenders', badge: 'Live Feed', color: '#2563EB' },
     { title: 'Tender Results', icon: Award, link: 'https://www.tenderdetail.com/tender-results', badge: 'Latest', color: '#059669' },
+    { title: 'Govt DID Issuer Portal', icon: ShieldCheck, action: () => onOpenIssuerLogin ? onOpenIssuerLogin() : onOpenLogin('issuer'), badge: 'Identity', color: '#6366F1' },
     { title: 'Tender By Category', icon: FolderKanban, link: '#categories', isScroll: true, color: '#D97706' },
     { title: 'Login', icon: LogIn, action: () => onOpenLogin(), badge: 'Account', color: '#7C3AED' },
     { title: 'Request for Sample Tenders', icon: FileText, link: 'https://www.tenderdetail.com/request-sample-tender', color: '#2563EB' },

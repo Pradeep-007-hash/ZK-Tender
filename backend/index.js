@@ -18,9 +18,13 @@ const tenderRoutes = require('./routes/tenderRoutes');
 const pqcRoutes = require('./routes/pqcRoutes');
 const pqcMldsaRoutes = require('./routes/pqcMldsaRoutes');
 const evaluationRoutes = require('./routes/evaluationRoutes');
+const didRoutes = require('./routes/didRoutes');
 
 app.use(cors());
 app.use(express.json());
+
+// DID & Verifiable Credentials Routes
+app.use('/api/did', didRoutes);
 
 // Post-Quantum Cryptography (PQC ML-KEM-768 & ML-DSA-65) Routes
 app.use('/api', pqcMldsaRoutes);
