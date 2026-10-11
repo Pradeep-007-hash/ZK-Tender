@@ -137,10 +137,10 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
     finEvalEndDate: initialTimeline.finEvalEndDate || '',
     awardDate: initialTimeline.awardDate || '',
 
-    // 5. Vendor Eligibility Criteria ⭐ (Dynamic List)
+    // 5. Vendor Eligibility Criteria (Dynamic List)
     eligibilityRequirements: [],
 
-    // 6. Required Documents Checklist ⭐ (Dynamic List)
+    // 6. Required Documents Checklist (Dynamic List)
     requiredDocsList: [],
 
     // 7. Bid Configuration & Rules
@@ -151,11 +151,11 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
     multipleBidSubmission: 'Not Allowed', // Allowed | Not Allowed
     financialBidEncryption: 'Enabled', // Enabled | Disabled
 
-    // 8. Evaluation Criteria & QCBS Weights ⭐ (Dynamic Builder)
+    // 8. Evaluation Criteria & QCBS Weights (Dynamic Builder)
     evaluationMethod: 'QCBS', // QCBS | L1 | QBS | Custom Evaluation
     evaluationCriteriaList: [],
 
-    // 9. ZKP & Cryptographic Privacy Engine ⭐
+    // 9. ZKP & Cryptographic Privacy Engine
     zkpActive: true,
     zkpConfig: {
       eligibilityVerification: true,
@@ -168,7 +168,7 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
       technicalCompliance: true
     },
 
-    // 10. Governance Policy Binding ⭐
+    // 10. Governance Policy Binding
     governancePolicies: [],
     tenderSpecificRules: [],
 
@@ -190,10 +190,10 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
     { id: 2, name: 'Financial Framework', desc: 'Estimates, EMD & Fees' },
     { id: 3, name: 'Location & Scope', desc: 'Work Area & Duration' },
     { id: 4, name: 'Timeline Engine', desc: 'Dates & Chronology' },
-    { id: 5, name: 'Vendor Eligibility ⭐', desc: 'Requirements & Gateways' },
-    { id: 6, name: 'Required Documents ⭐', desc: 'Checklist & Verification' },
+    { id: 5, name: 'Vendor Eligibility', desc: 'Requirements & Gateways' },
+    { id: 6, name: 'Required Documents', desc: 'Checklist & Verification' },
     { id: 7, name: 'Config & Rules', desc: 'Stage, Encryption & Validity' },
-    { id: 8, name: 'Evaluation ⭐', desc: 'QCBS Criteria Builder' },
+    { id: 8, name: 'Evaluation', desc: 'QCBS Criteria Builder' },
     { id: 9, name: 'Review & Register', desc: 'Inspector & Blockchain Registration' }
   ];
 
@@ -564,65 +564,72 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
     }, 1500);
   };
 
-  // Dynamic Theme Utility Classes (Frosted White Glassmorphism Blur Cards & Theme Adaptive Modals)
-  const cardBg = lightTheme ? 'bg-white/80 backdrop-blur-xl border-slate-200/80 text-slate-900 shadow-xl backdrop-saturate-150' : 'bg-white/10 backdrop-blur-xl border border-white/20 text-white shadow-2xl backdrop-saturate-150 transition-all';
-  const cardHeaderBorder = lightTheme ? 'border-slate-200/80' : 'border-white/20';
-  const cardTitleText = lightTheme ? 'text-slate-900 font-bold' : 'text-white font-bold';
-  const labelText = lightTheme ? 'text-slate-700 font-semibold' : 'text-slate-200 font-medium';
-  const inputBgText = lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-teal-500 shadow-sm cursor-pointer' : 'bg-slate-950/80 border-slate-700 text-slate-100 focus:border-teal-400 shadow-inner cursor-pointer';
+  // Dynamic Theme Utility Classes (Clean, normal styling)
+  const cardBg = lightTheme ? 'bg-white border-slate-200 text-slate-900 shadow-sm' : 'bg-slate-900 border-slate-800 text-white shadow-sm';
+  const cardHeaderBorder = lightTheme ? 'border-slate-200' : 'border-slate-800';
+  const cardTitleText = lightTheme ? 'text-slate-900 font-bold' : 'text-slate-100 font-bold';
+  const labelText = lightTheme ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium';
+  const inputBgText = lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-blue-500 shadow-sm' : 'bg-slate-950 border-slate-800 text-slate-100 focus:border-blue-500 shadow-inner';
 
-  // Dynamic Theme Adaptive Modal Cards (Frosted White Card Background with High-Contrast Text)
-  const modalCardBg = 'bg-white/95 backdrop-blur-2xl border border-slate-200/90 text-slate-900 shadow-2xl';
-  const modalHeaderBorder = 'border-slate-200';
-  const modalLabelText = 'text-slate-800 font-bold';
-  const modalInputBg = 'bg-slate-50 border-slate-300 text-slate-900 focus:border-teal-500 focus:bg-white shadow-sm font-medium';
-  const modalCancelBtn = 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold border border-slate-300';
+  // Dynamic Theme Adaptive Modal Cards
+  const modalCardBg = lightTheme ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-slate-900 border-slate-800 text-white shadow-2xl';
+  const modalHeaderBorder = lightTheme ? 'border-slate-200' : 'border-slate-800';
+  const modalLabelText = lightTheme ? 'text-slate-800 font-medium' : 'text-slate-200 font-medium';
+  const modalInputBg = lightTheme ? 'bg-white border-slate-300 text-slate-900 focus:border-blue-500 shadow-sm font-medium' : 'bg-slate-950 border-slate-800 text-slate-100 focus:border-blue-500 shadow-inner font-medium';
+  const modalCancelBtn = lightTheme ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium border border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium border border-slate-700';
 
   const evaluationTotalWeightSum = formData.evaluationCriteriaList.reduce((acc, curr) => acc + (parseInt(curr.weight) || 0), 0);
 
   return (
     <div className="space-y-6 font-sans text-xs">
       
-      {/* HEADER BANNER - Fully visible in both Light and Dark Themes */}
-      <div className="p-6 rounded-2xl border bg-gradient-to-r from-slate-950 via-teal-950 to-slate-900 text-white border-slate-800 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+      {/* HEADER BANNER */}
+      <div className={`p-5 rounded-xl border ${lightTheme ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'} shadow-sm`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2 mb-2">
-              <span className="px-3 py-1 bg-teal-500/30 text-teal-200 border border-teal-400/40 rounded-full font-mono text-[11px] font-extrabold flex items-center gap-1.5 shadow-sm">
-                <ShieldCheck size={14} className="text-teal-300" /> GovLedger TenderRegistry Ready
+              <span className={`px-2.5 py-0.5 rounded-md font-mono text-[11px] font-medium border ${
+                lightTheme ? 'bg-slate-100 border-slate-300 text-slate-700' : 'bg-slate-800 border-slate-700 text-slate-300'
+              }`}>
+                GovLedger TenderRegistry Ready
               </span>
-              <span className="px-3 py-1 bg-blue-500/30 text-blue-200 border border-blue-400/40 rounded-full font-mono text-[11px] font-extrabold shadow-sm">
+              <span className={`px-2.5 py-0.5 rounded-md font-mono text-[11px] font-medium border ${
+                lightTheme ? 'bg-slate-100 border-slate-300 text-slate-700' : 'bg-slate-800 border-slate-700 text-slate-300'
+              }`}>
                 E-Procurement Specification
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight drop-shadow-md">
+            <h1 className="text-xl font-bold tracking-tight">
               Create New Public Tender
             </h1>
-            <p className="text-slate-200 text-xs mt-1 font-medium leading-relaxed max-w-2xl">
-              Official 12-section government procurement specification with zero-knowledge privacy, compliance rules, and blockchain registry anchoring.
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 leading-relaxed max-w-2xl">
+              Official government procurement specification with zero-knowledge privacy, compliance rules, and blockchain registry anchoring.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <button 
               onClick={handleSaveDraft}
-              className="px-4 py-2 bg-slate-800/90 hover:bg-slate-700 text-slate-100 font-bold rounded-xl transition border border-slate-600 flex items-center gap-1.5 shadow"
+              className={`px-3.5 py-2 font-medium rounded-lg transition border flex items-center gap-1.5 text-xs ${
+                lightTheme ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+              }`}
             >
               <Save size={14} /> Save Draft
             </button>
             <button 
               onClick={() => setShowPreviewModal(true)}
-              className="px-4 py-2 bg-slate-800/90 hover:bg-slate-700 text-slate-100 font-bold rounded-xl transition border border-slate-600 flex items-center gap-1.5 shadow"
+              className={`px-3.5 py-2 font-medium rounded-lg transition border flex items-center gap-1.5 text-xs ${
+                lightTheme ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+              }`}
             >
               <Eye size={14} /> Preview
             </button>
             <button 
               onClick={handlePublishTender}
               disabled={!isFormFullyValid}
-              className={`px-5 py-2 font-black rounded-xl shadow-lg transition flex items-center gap-2 ${
+              className={`px-4 py-2 font-semibold rounded-lg shadow-sm transition flex items-center gap-1.5 text-xs ${
                 isFormFullyValid 
-                  ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-teal-500/30 cursor-pointer' 
+                  ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer' 
                   : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
               }`}
             >
@@ -634,15 +641,21 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
       {/* PUBLISHED SUCCESS CONFIRMATION CALLOUT */}
       {publishedData && (
-        <div className="p-5 bg-emerald-950/90 border-2 border-emerald-500 rounded-2xl text-emerald-100 space-y-3 shadow-2xl">
+        <div className={`p-4 border rounded-xl space-y-3 ${
+          lightTheme ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-100'
+        }`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-emerald-300 font-bold text-sm">
-              <CheckCircle2 size={20} className="text-emerald-400" />
-              <span>✓ Tender Published & Registered Successfully on Blockchain Ledger</span>
+            <div className="flex items-center space-x-2 font-semibold text-sm">
+              <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+              <span>Tender Published & Registered Successfully on Blockchain Ledger</span>
             </div>
-            <button onClick={() => setPublishedData(null)} className="text-emerald-400 hover:text-white font-bold">✕</button>
+            <button onClick={() => setPublishedData(null)} className="text-emerald-500 hover:text-emerald-400 p-1">
+              <X size={16} />
+            </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 font-mono text-xs bg-slate-950 p-3 rounded-xl border border-emerald-500/40 text-slate-200">
+          <div className={`grid grid-cols-1 sm:grid-cols-4 gap-3 font-mono text-xs p-3 rounded-lg border ${
+            lightTheme ? 'bg-white border-emerald-200 text-slate-800' : 'bg-slate-950 border-slate-800 text-slate-200'
+          }`}>
             <div><span className="text-slate-400">Tender ID:</span> <span className="text-teal-400 font-bold">{publishedData.id}</span></div>
             <div><span className="text-slate-400">Status:</span> <span className="text-emerald-400 font-bold">{publishedData.status}</span></div>
             <div><span className="text-slate-400">Timestamp:</span> <span>{publishedData.timestamp}</span></div>
@@ -669,24 +682,24 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
         <div className="lg:col-span-6 space-y-6">
 
           {/* SECTION 1: CLASSIFICATION & OVERVIEW */}
-          <div id="proc-section-1" className={`rounded-2xl border p-6 space-y-4 transition-colors duration-300 ${cardBg}`}>
+          <div id="proc-section-1" className={`rounded-xl border p-6 space-y-4 transition-colors ${cardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${cardHeaderBorder}`}>
               <h2 className={`text-sm font-bold flex items-center space-x-2 ${cardTitleText}`}>
-                <span className="w-7 h-7 rounded-xl bg-teal-500 text-slate-950 font-black flex items-center justify-center font-mono text-xs shadow-md">1</span>
+                <span className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-bold flex items-center justify-center font-mono text-xs">1</span>
                 <span>Classification & Overview</span>
               </h2>
               
               {/* SYSTEM-CONTROLLED STATUS BADGE (NO MANUAL EDITING) */}
               <div className="flex items-center space-x-2">
                 <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">System Controlled:</span>
-                <span className={`px-3 py-1 rounded-full font-mono font-bold text-xs flex items-center gap-1.5 ${
+                <span className={`px-2.5 py-0.5 rounded-full font-mono font-medium text-xs border flex items-center gap-1.5 ${
                   currentStatus === 'Published' || currentStatus === 'Open' 
-                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30' 
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
                     : currentStatus === 'Closing Soon' 
-                      ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30' 
-                      : 'bg-slate-700 text-slate-300'
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' 
+                      : 'bg-slate-800 text-slate-300 border-slate-700'
                 }`}>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                   {currentStatus}
                 </span>
               </div>
@@ -699,7 +712,7 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
                   type="text" 
                   value={formData.tenderId} 
                   readOnly 
-                  className={`w-full p-2.5 rounded-xl font-mono font-bold text-xs cursor-not-allowed text-teal-600 dark:text-teal-400 ${
+                  className={`w-full p-2.5 rounded-xl font-mono text-xs cursor-not-allowed text-slate-300 ${
                     lightTheme ? 'bg-slate-100 border-slate-300' : 'bg-slate-950 border-slate-800'
                   }`}
                 />
@@ -789,13 +802,13 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
           </div>
 
           {/* SECTION 2: BUDGET & FINANCIAL TERMS */}
-          <div id="proc-section-2" className={`rounded-2xl border p-6 space-y-4 transition-colors duration-300 ${cardBg}`}>
+          <div id="proc-section-2" className={`rounded-xl border p-6 space-y-4 transition-colors ${cardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${cardHeaderBorder}`}>
               <h2 className={`text-sm font-bold flex items-center space-x-2 ${cardTitleText}`}>
-                <span className="w-7 h-7 rounded-xl bg-teal-500 text-slate-950 font-black flex items-center justify-center font-mono text-xs shadow-md">2</span>
+                <span className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-bold flex items-center justify-center font-mono text-xs">2</span>
                 <span>Budget & Financial Terms</span>
               </h2>
-              <span className="text-amber-500 font-mono font-bold text-sm">{formatCurrency(formData.estimatedValue)}</span>
+              <span className="text-slate-300 font-mono font-semibold text-sm">{formatCurrency(formData.estimatedValue)}</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -818,9 +831,7 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
                   type="number" 
                   value={formData.estimatedValue}
                   onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
-                  className={`w-full p-2.5 rounded-xl font-mono font-extrabold text-amber-500 text-xs focus:outline-none ${
-                    lightTheme ? 'bg-slate-50 border-slate-300' : 'bg-slate-950 border-slate-800'
-                  }`}
+                  className={`w-full p-2.5 rounded-xl font-mono text-xs focus:outline-none ${inputBgText}`}
                 />
               </div>
 
@@ -868,7 +879,7 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
             {/* EMD CONFIGURATION SUB-CARD */}
             <div className={`p-4 rounded-xl border space-y-3 ${lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
               <div className="flex items-center justify-between border-b pb-2 border-slate-800">
-                <span className="font-bold text-xs text-emerald-500 font-mono flex items-center gap-1.5">
+                <span className="font-semibold text-xs text-slate-300 font-mono flex items-center gap-1.5">
                   <DollarSign size={14} /> EMD / Bid Security Configuration
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">Progressive Setup</span>
@@ -895,9 +906,7 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
                       type="number" 
                       value={formData.emdAmount}
                       onChange={(e) => setFormData({ ...formData, emdAmount: e.target.value })}
-                      className={`w-full p-2.5 rounded-xl font-mono font-extrabold text-emerald-500 text-xs focus:outline-none ${
-                        lightTheme ? 'bg-white border-slate-300' : 'bg-slate-900 border-slate-700'
-                      }`}
+                      className={`w-full p-2.5 rounded-xl font-mono text-xs focus:outline-none ${inputBgText}`}
                     />
                   </div>
                 )}
@@ -910,9 +919,7 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
                       value={formData.emdPercentage}
                       onChange={(e) => setFormData({ ...formData, emdPercentage: e.target.value })}
                       placeholder="e.g. 2%"
-                      className={`w-full p-2.5 rounded-xl font-mono font-extrabold text-emerald-500 text-xs focus:outline-none ${
-                        lightTheme ? 'bg-white border-slate-300' : 'bg-slate-900 border-slate-700'
-                      }`}
+                      className={`w-full p-2.5 rounded-xl font-mono text-xs focus:outline-none ${inputBgText}`}
                     />
                   </div>
                 )}
@@ -973,10 +980,10 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
           </div>
 
           {/* SECTION 3: LOCATION & SCOPE */}
-          <div id="proc-section-3" className={`rounded-2xl border p-6 space-y-4 transition-colors duration-300 ${cardBg}`}>
+          <div id="proc-section-3" className={`rounded-xl border p-6 space-y-4 transition-colors ${cardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${cardHeaderBorder}`}>
               <h2 className={`text-sm font-bold flex items-center space-x-2 ${cardTitleText}`}>
-                <span className="w-7 h-7 rounded-xl bg-teal-500 text-slate-950 font-black flex items-center justify-center font-mono text-xs shadow-md">3</span>
+                <span className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-bold flex items-center justify-center font-mono text-xs">3</span>
                 <span>Location & Scope</span>
               </h2>
               <span className="text-slate-400 font-mono text-[11px]">{formData.city}, {formData.state}</span>
@@ -1045,22 +1052,22 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
           </div>
 
           {/* SECTION 4: TIMELINE & CHRONOLOGICAL VALIDATION */}
-          <div id="proc-section-4" className={`rounded-2xl border p-6 space-y-4 transition-colors duration-300 ${cardBg}`}>
+          <div id="proc-section-4" className={`rounded-xl border p-6 space-y-4 transition-colors ${cardBg}`}>
             <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3 ${cardHeaderBorder}`}>
               <div>
                 <h2 className={`text-sm font-bold flex items-center space-x-2 ${cardTitleText}`}>
-                  <span className="w-7 h-7 rounded-xl bg-teal-500 text-slate-950 font-black flex items-center justify-center font-mono text-xs shadow-md">4</span>
+                  <span className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-bold flex items-center justify-center font-mono text-xs">4</span>
                   <span>Procurement Timeline</span>
                 </h2>
                 <p className="text-slate-400 text-[11px] mt-0.5">Changing Publication Date auto-calculates standard timeline (all fields remain fully editable)</p>
               </div>
-              <Clock size={16} className="text-teal-500 shrink-0" />
+              <Clock size={16} className="text-slate-400 shrink-0" />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className={`block mb-1 text-[10px] ${labelText} font-bold text-teal-400`}>Publication Date (Auto-calculates Timeline)</label>
-                <input type="date" value={formData.pubDate} onChange={(e) => handlePubDateChange(e.target.value)} className={`w-full p-2 rounded-xl font-mono text-xs focus:outline-none border-teal-500/50 ${inputBgText}`} />
+                <label className={`block mb-1 text-[10px] ${labelText}`}>Publication Date (Auto-calculates Timeline)</label>
+                <input type="date" value={formData.pubDate} onChange={(e) => handlePubDateChange(e.target.value)} className={`w-full p-2 rounded-xl font-mono text-xs focus:outline-none ${inputBgText}`} />
               </div>
 
               <div>
@@ -1079,10 +1086,8 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
               </div>
 
               <div>
-                <label className="block text-rose-500 font-bold mb-1 text-[10px]">Bid Submission Deadline *</label>
-                <input type="date" value={formData.submissionDeadline} onChange={(e) => setFormData({ ...formData, submissionDeadline: e.target.value })} className={`w-full p-2 rounded-xl font-mono text-xs text-rose-500 border border-rose-500/50 focus:outline-none ${
-                  lightTheme ? 'bg-rose-50/50' : 'bg-slate-950'
-                }`} />
+                <label className={`block mb-1 text-[10px] ${labelText}`}>Bid Submission Deadline <span className="text-rose-500">*</span></label>
+                <input type="date" value={formData.submissionDeadline} onChange={(e) => setFormData({ ...formData, submissionDeadline: e.target.value })} className={`w-full p-2 rounded-xl font-mono text-xs focus:outline-none ${inputBgText}`} />
               </div>
 
               <div>
@@ -1106,28 +1111,26 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
               </div>
 
               <div>
-                <label className="block text-teal-500 font-bold mb-1 text-[10px]">Expected Award Date</label>
-                <input type="date" value={formData.awardDate} onChange={(e) => setFormData({ ...formData, awardDate: e.target.value })} className={`w-full p-2 rounded-xl font-mono text-xs text-teal-500 border border-teal-500/50 focus:outline-none ${
-                  lightTheme ? 'bg-teal-50/50' : 'bg-slate-950'
-                }`} />
+                <label className={`block mb-1 text-[10px] ${labelText}`}>Expected Award Date</label>
+                <input type="date" value={formData.awardDate} onChange={(e) => setFormData({ ...formData, awardDate: e.target.value })} className={`w-full p-2 rounded-xl font-mono text-xs focus:outline-none ${inputBgText}`} />
               </div>
             </div>
           </div>
 
-          {/* SECTION 5: VENDOR ELIGIBILITY CRITERIA BUILDER ⭐ */}
-          <div id="proc-section-5" className={`rounded-2xl border p-6 space-y-4 transition-all duration-300 border-amber-500/40 backdrop-blur-xl shadow-2xl ${cardBg}`}>
+          {/* SECTION 5: VENDOR ELIGIBILITY CRITERIA */}
+          <div id="proc-section-5" className={`rounded-xl border p-6 space-y-4 transition-colors ${cardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${cardHeaderBorder}`}>
               <div>
-                <h2 className="text-sm font-bold text-amber-500 flex items-center space-x-2">
-                  <span className="w-7 h-7 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center font-mono text-xs shadow-md">5</span>
-                  <span>Vendor Eligibility Criteria ⭐ (Eligibility Builder)</span>
+                <h2 className={`text-sm font-bold flex items-center space-x-2 ${cardTitleText}`}>
+                  <span className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-bold flex items-center justify-center font-mono text-xs">5</span>
+                  <span>Vendor Eligibility Criteria</span>
                 </h2>
                 <p className="text-slate-400 text-[11px] mt-0.5">Define criteria verified via Zero-Knowledge Proofs or Authority Verification</p>
               </div>
 
               <button 
                 onClick={() => setShowAddEligibilityModal(true)}
-                className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg hover:shadow-amber-500/30 flex items-center gap-1.5 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Plus size={14} /> Add Eligibility Requirement
               </button>
@@ -1135,21 +1138,19 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
             <div className="space-y-3">
               {formData.eligibilityRequirements.map((req) => (
-                <div key={req.id} className={`p-4 rounded-xl border backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all shadow-lg ${
-                  lightTheme ? 'bg-slate-50/80 border-slate-200/80' : 'bg-white/10 border-white/20 text-white'
+                <div key={req.id} className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                  lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/80 border-slate-800 text-white'
                 }`}>
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
-                      <span className="font-bold text-white text-xs">{req.name}</span>
-                      <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 font-mono text-[10px] rounded">{req.category}</span>
-                      <span className={`px-2 py-0.5 font-mono text-[10px] rounded font-bold ${
-                        req.verificationMethod === 'Zero-Knowledge Proof' ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' : 'bg-blue-500/20 text-blue-300'
-                      }`}>
+                      <span className="font-bold text-xs">{req.name}</span>
+                      <span className="px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 font-mono text-[10px] rounded">{req.category}</span>
+                      <span className="px-2 py-0.5 font-mono text-[10px] rounded bg-slate-800 text-slate-300 border border-slate-700 font-medium">
                         {req.verificationMethod}
                       </span>
                     </div>
                     <p className="text-slate-400 font-mono text-[11px]">
-                      Rule: <span className="text-amber-400 font-bold">{req.dataField}</span> {req.operator} <span className="text-white font-bold">{req.value}</span> (Mandatory: {req.mandatory})
+                      Rule: <span className="text-slate-200 font-semibold">{req.dataField}</span> {req.operator} <span className="text-slate-200 font-semibold">{req.value}</span> (Mandatory: {req.mandatory})
                     </p>
                   </div>
 
@@ -1164,20 +1165,20 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
             </div>
           </div>
 
-          {/* SECTION 6: REQUIRED DOCUMENTS CHECKLIST BUILDER ⭐ */}
-          <div id="proc-section-6" className={`rounded-2xl border p-6 space-y-4 transition-all duration-300 border-teal-500/40 backdrop-blur-xl shadow-2xl ${cardBg}`}>
+          {/* SECTION 6: REQUIRED DOCUMENTS CHECKLIST */}
+          <div id="proc-section-6" className={`rounded-xl border p-6 space-y-4 transition-colors ${cardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${cardHeaderBorder}`}>
               <div>
-                <h2 className="text-sm font-bold text-teal-600 dark:text-teal-300 flex items-center space-x-2">
-                  <span className="w-7 h-7 rounded-xl bg-teal-500 text-slate-950 font-black flex items-center justify-center font-mono text-xs shadow-md">6</span>
-                  <span>Required Documents Checklist ⭐</span>
+                <h2 className={`text-sm font-bold flex items-center space-x-2 ${cardTitleText}`}>
+                  <span className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-bold flex items-center justify-center font-mono text-xs">6</span>
+                  <span>Required Documents Checklist</span>
                 </h2>
                 <p className="text-slate-400 text-[11px] mt-0.5">Mandatory uploaded credentials & cryptographic verification rules</p>
               </div>
 
               <button 
                 onClick={() => setShowAddDocModal(true)}
-                className="px-3.5 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg hover:shadow-teal-500/30 flex items-center gap-1.5 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Plus size={14} /> Add Required Document
               </button>
@@ -1185,16 +1186,16 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
             <div className="space-y-3">
               {formData.requiredDocsList.map((doc) => (
-                <div key={doc.id} className={`p-4 rounded-xl border backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all shadow-lg ${
-                  lightTheme ? 'bg-slate-50/80 border-slate-200/80' : 'bg-white/10 border-white/20 text-white'
+                <div key={doc.id} className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                  lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/80 border-slate-800 text-white'
                 }`}>
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
-                      <span className="font-bold text-white text-xs">{doc.name}</span>
-                      <span className="px-2 py-0.5 bg-teal-500/20 text-teal-300 font-mono text-[10px] rounded font-bold">{doc.required}</span>
+                      <span className="font-bold text-xs">{doc.name}</span>
+                      <span className="px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 font-mono text-[10px] rounded font-medium">{doc.required}</span>
                       <span className="px-2 py-0.5 bg-slate-800 text-slate-300 font-mono text-[10px] rounded">{doc.allowedType} ({doc.maxSize})</span>
                     </div>
-                    <p className="text-slate-400 text-[11px]">{doc.description} — <span className="text-teal-400 font-mono">{doc.verificationMethod}</span></p>
+                    <p className="text-slate-400 text-[11px]">{doc.description} — <span className="text-slate-300 font-mono">{doc.verificationMethod}</span></p>
                   </div>
 
                   <button 
@@ -1208,11 +1209,11 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
             </div>
           </div>
 
-          {/* SECTION 7: BID CONFIGURATION & PRIVACY RULES */}
-          <div id="proc-section-7" className={`rounded-2xl border p-6 space-y-4 transition-colors duration-300 ${cardBg}`}>
+          {/* SECTION 7: BID CONFIGURATION & RULES */}
+          <div id="proc-section-7" className={`rounded-xl border p-6 space-y-4 transition-colors ${cardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${cardHeaderBorder}`}>
               <h2 className={`text-sm font-bold flex items-center space-x-2 ${cardTitleText}`}>
-                <span className="w-7 h-7 rounded-xl bg-teal-500 text-slate-950 font-black flex items-center justify-center font-mono text-xs shadow-md">7</span>
+                <span className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-bold flex items-center justify-center font-mono text-xs">7</span>
                 <span>Bid Configuration & Rules</span>
               </h2>
             </div>
@@ -1282,9 +1283,7 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
                 <select 
                   value={formData.financialBidEncryption}
                   onChange={(e) => setFormData({ ...formData, financialBidEncryption: e.target.value })}
-                  className={`w-full p-2.5 rounded-xl font-bold text-xs focus:outline-none text-emerald-500 ${
-                    lightTheme ? 'bg-slate-50 border-slate-300' : 'bg-slate-950 border-slate-800'
-                  }`}
+                  className={`w-full p-2.5 rounded-xl font-medium text-xs focus:outline-none ${inputBgText}`}
                 >
                   <option value="Enabled">Enabled (End-to-End Sealed Encrypted Bids)</option>
                   <option value="Disabled">Disabled</option>
@@ -1293,29 +1292,29 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
             </div>
           </div>
 
-          {/* SECTION 8: EVALUATION CRITERIA & QCBS WEIGHT BUILDER ⭐ */}
-          <div id="proc-section-8" className={`rounded-2xl border p-6 space-y-4 transition-colors duration-300 border-indigo-500/30 ${cardBg}`}>
+          {/* SECTION 8: EVALUATION CRITERIA & QCBS WEIGHTS */}
+          <div id="proc-section-8" className={`rounded-xl border p-6 space-y-4 transition-colors ${cardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${cardHeaderBorder}`}>
               <div>
-                <h2 className="text-sm font-bold text-indigo-600 dark:text-indigo-300 flex items-center space-x-2">
-                  <span className="w-7 h-7 rounded-xl bg-indigo-500 text-slate-950 font-black flex items-center justify-center font-mono text-xs shadow-md">8</span>
-                  <span>Evaluation Criteria & QCBS Weights ⭐</span>
+                <h2 className={`text-sm font-bold flex items-center space-x-2 ${cardTitleText}`}>
+                  <span className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-bold flex items-center justify-center font-mono text-xs">8</span>
+                  <span>Evaluation Criteria & QCBS Weights</span>
                 </h2>
                 <p className="text-slate-400 text-[11px] mt-0.5">Enforces mandatory 100% total weight sum for QCBS evaluation</p>
               </div>
 
               <div className="flex items-center space-x-2">
-                <span className={`px-3 py-1 font-mono text-xs font-bold rounded-full border ${
+                <span className={`px-2.5 py-1 font-mono text-xs font-semibold rounded-md border ${
                   evaluationTotalWeightSum === 100 
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' 
-                    : 'bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse'
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                    : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                 }`}>
                   Total: {evaluationTotalWeightSum}% / 100%
                 </span>
                 {(formData.evaluationMethod === 'QCBS' || formData.evaluationMethod === 'Custom Evaluation') && (
                   <button 
                     onClick={() => setShowAddCriterionModal(true)}
-                    className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-bold text-xs rounded-xl shadow flex items-center gap-1.5 transition"
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg flex items-center gap-1.5 transition"
                   >
                     <Plus size={14} /> Add Criterion
                   </button>
@@ -1340,21 +1339,21 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
               {formData.evaluationMethod === 'L1' ? (
                 <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 text-slate-300 text-xs">
-                  <p className="font-bold text-teal-400">L1 Lowest Price Bidder Selection Selected</p>
+                  <p className="font-bold text-slate-200">L1 Lowest Price Bidder Selection Selected</p>
                   <p className="text-[11px] text-slate-400 mt-1">Technical weight percentages are not required. The qualified vendor submitting the lowest financial bid will be awarded.</p>
                 </div>
               ) : (
                 <div className="space-y-3 pt-2">
                   {formData.evaluationCriteriaList.map((crit) => (
-                    <div key={crit.id} className={`p-4 rounded-xl border backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all shadow-lg ${
-                      lightTheme ? 'bg-slate-50/80 border-slate-200/80' : 'bg-white/10 border-white/20 text-white'
+                    <div key={crit.id} className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                      lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/80 border-slate-800 text-white'
                     }`}>
                       <div className="space-y-1">
                         <div className="flex items-center space-x-2">
-                          <span className="font-bold text-white text-xs">{crit.name}</span>
-                          <span className="px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 font-mono text-xs font-bold rounded-full">{crit.weight}% Weight</span>
+                          <span className="font-bold text-xs">{crit.name}</span>
+                          <span className="px-2.5 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 font-mono text-xs font-medium rounded-full">{crit.weight}% Weight</span>
                         </div>
-                        <p className="text-slate-400 text-[11px]">{crit.description} — <span className="text-indigo-400 font-mono">{crit.scoringMethod}</span></p>
+                        <p className="text-slate-400 text-[11px]">{crit.description} — <span className="text-slate-300 font-mono">{crit.scoringMethod}</span></p>
                       </div>
 
                       <button 
@@ -1371,88 +1370,108 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
           </div>
 
           {/* SECTION 9: REAL-TIME COMPLIANCE INSPECTOR & BLOCKCHAIN REGISTRATION */}
-          <div id="proc-section-9" className="rounded-2xl border p-6 space-y-5 shadow-2xl transition-colors duration-300 bg-gradient-to-r from-slate-950 via-teal-950 to-slate-900 text-white border-teal-500/50">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div id="proc-section-9" className={`rounded-xl border p-6 space-y-5 transition-colors ${cardBg}`}>
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 ${cardHeaderBorder}`}>
               <div>
-                <h2 className="text-base font-extrabold text-white flex items-center space-x-2">
-                  <span className="w-7 h-7 rounded-xl bg-teal-500 text-slate-950 font-black flex items-center justify-center font-mono text-xs shadow-md">9</span>
+                <h2 className={`text-base font-bold flex items-center space-x-2 ${cardTitleText}`}>
+                  <span className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-bold flex items-center justify-center font-mono text-xs">9</span>
                   <span>Real-Time Compliance Inspector & Blockchain Registration</span>
                 </h2>
-                <p className="text-slate-200 text-xs mt-1 font-medium">Final automated validation before registering in TenderRegistry smart contract</p>
+                <p className="text-slate-400 text-xs mt-1">Final automated validation before registering in TenderRegistry smart contract</p>
               </div>
 
-              <span className={`px-3 py-1 font-mono font-extrabold rounded-full text-xs flex items-center gap-1.5 self-start sm:self-auto ${
-                isFormFullyValid ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-rose-500/30 text-rose-200 border border-rose-400/40'
+              <span className={`px-2.5 py-1 font-mono font-medium rounded-md text-xs flex items-center gap-1.5 self-start sm:self-auto border ${
+                isFormFullyValid ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
               }`}>
-                {isFormFullyValid ? <CheckCircle2 size={14} className="text-emerald-300" /> : <AlertCircle size={14} className="text-rose-300" />}
-                {isFormFullyValid ? 'OVERALL STATUS: READY TO PUBLISH' : `ACTION REQUIRED (${validationErrors.length} Issues)`}
+                {isFormFullyValid ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />}
+                {isFormFullyValid ? 'Ready to Register' : `Action Required (${validationErrors.length} ${validationErrors.length === 1 ? 'Issue' : 'Issues'})`}
               </span>
             </div>
 
             {/* INSPECTOR VALIDATION GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 font-mono text-xs">
-              <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+              }`}>
                 <span className="text-slate-400">Procurement Method Check</span>
-                <span className="text-emerald-400 font-bold">✓ Valid</span>
+                <span className="text-emerald-400 font-semibold flex items-center gap-1"><Check size={13} /> Valid</span>
               </div>
-              <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+              }`}>
                 <span className="text-slate-400">Financial Configuration</span>
-                <span className="text-emerald-400 font-bold">✓ Valid</span>
+                <span className="text-emerald-400 font-semibold flex items-center gap-1"><Check size={13} /> Valid</span>
               </div>
-              <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+              }`}>
                 <span className="text-slate-400">Timeline Chronology</span>
-                <span className={validationErrors.some(e => e.section === 4) ? "text-rose-400 font-bold" : "text-emerald-400 font-bold"}>
-                  {validationErrors.some(e => e.section === 4) ? "⚠ Invalid Dates" : "✓ Valid"}
-                </span>
+                {validationErrors.some(e => e.section === 4) ? (
+                  <span className="text-rose-400 font-semibold flex items-center gap-1"><AlertCircle size={13} /> Invalid Dates</span>
+                ) : (
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1"><Check size={13} /> Valid</span>
+                )}
               </div>
-              <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+              }`}>
                 <span className="text-slate-400">Eligibility Validation</span>
-                <span className="text-emerald-400 font-bold">✓ Valid</span>
+                <span className="text-emerald-400 font-semibold flex items-center gap-1"><Check size={13} /> Valid</span>
               </div>
-              <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between font-mono">
+              <div className={`p-3 rounded-xl border flex items-center justify-between font-mono ${
+                lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+              }`}>
                 <span className="text-slate-400">QCBS 100% Weight</span>
-                <span className={evaluationTotalWeightSum === 100 ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
-                  {evaluationTotalWeightSum === 100 ? "✓ 100%" : `⚠ ${evaluationTotalWeightSum}%`}
-                </span>
+                {evaluationTotalWeightSum === 100 ? (
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1"><Check size={13} /> 100%</span>
+                ) : (
+                  <span className="text-rose-400 font-semibold flex items-center gap-1"><AlertCircle size={13} /> {evaluationTotalWeightSum}%</span>
+                )}
               </div>
             </div>
 
             {/* BOTTOM BUTTON BAR (SECTION 15) */}
-            <div className="flex flex-wrap items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className={`flex flex-wrap items-center justify-end gap-3 pt-3 border-t ${cardHeaderBorder}`}>
               <button 
                 onClick={handleSaveDraft}
-                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition border border-slate-600 flex items-center gap-2 shadow"
+                className={`px-3.5 py-2 font-medium rounded-lg transition border flex items-center gap-1.5 text-xs ${
+                  lightTheme ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
               >
-                <Save size={15} /> Save Draft
+                <Save size={14} /> Save Draft
               </button>
               <button 
                 onClick={() => setShowPreviewModal(true)}
-                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition border border-slate-600 flex items-center gap-2 shadow"
+                className={`px-3.5 py-2 font-medium rounded-lg transition border flex items-center gap-1.5 text-xs ${
+                  lightTheme ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
               >
-                <Eye size={15} /> Preview
+                <Eye size={14} /> Preview
               </button>
               <button 
                 onClick={() => {
                   if (isFormFullyValid) {
-                    if (onToast) onToast('All 12 procurement sections validated cleanly!', 'success');
+                    if (onToast) onToast('All procurement sections validated cleanly!', 'success');
                   } else {
                     if (onToast) onToast(`Validation failed: ${validationErrors[0].msg}`, 'error');
                   }
                 }}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition border border-blue-500 flex items-center gap-2 shadow"
+                className={`px-3.5 py-2 font-medium rounded-lg transition border flex items-center gap-1.5 text-xs ${
+                  lightTheme ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
               >
-                <ShieldCheck size={15} /> Validate Tender
+                <ShieldCheck size={14} /> Validate Tender
               </button>
               <button 
                 onClick={handlePublishTender}
                 disabled={!isFormFullyValid}
-                className={`px-6 py-2.5 font-black rounded-xl shadow-xl transition flex items-center gap-2 ${
+                className={`px-5 py-2 font-semibold rounded-lg shadow-sm transition flex items-center gap-2 text-xs ${
                   isFormFullyValid 
-                    ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-teal-500/30 cursor-pointer' 
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer' 
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                 }`}
               >
-                <Rocket size={16} /> Publish Tender & Register on Blockchain
+                <Rocket size={14} /> Publish Tender & Register on Blockchain
               </button>
             </div>
           </div>
@@ -1461,14 +1480,12 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
         {/* RIGHT SIDE: COMPLIANCE & INTEGRITY AUDIT PANEL (3 cols) */}
         <div className="lg:col-span-3 space-y-4">
-          <div className={`rounded-2xl border p-5 shadow-2xl sticky top-20 space-y-4 backdrop-blur-xl transition-all duration-300 ${
-            lightTheme ? 'bg-white/80 border-slate-200 text-slate-900' : 'bg-white/10 border-white/20 text-white'
-          }`}>
+          <div className={`rounded-xl border p-5 sticky top-20 space-y-4 transition-colors ${cardBg}`}>
             <div className={`border-b pb-3 flex items-center justify-between ${cardHeaderBorder}`}>
-              <h3 className={`font-bold text-xs uppercase tracking-wider font-mono flex items-center gap-1.5 ${cardTitleText}`}>
-                <ShieldCheck size={15} className="text-teal-500" /> Compliance & Integrity Inspector
+              <h3 className={`font-semibold text-xs font-mono flex items-center gap-1.5 ${cardTitleText}`}>
+                <ShieldCheck size={15} className="text-slate-400" /> Compliance & Integrity Inspector
               </h3>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             </div>
 
             <div className="space-y-3 font-mono text-[11px]">
@@ -1476,7 +1493,7 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
                 lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
               }`}>
                 <span className={labelText}>System Status</span>
-                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded font-bold">{currentStatus}</span>
+                <span className="px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 rounded font-medium">{currentStatus}</span>
               </div>
 
               <div className={`p-3 rounded-xl border flex items-center justify-between ${
@@ -1492,7 +1509,7 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
                 lightTheme ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
               }`}>
                 <span className={labelText}>ZKP Privacy Engine</span>
-                <span className="px-2 py-0.5 bg-teal-500/20 text-teal-400 rounded font-bold">{formData.zkpActive ? 'Enabled' : 'Disabled'}</span>
+                <span className="px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 rounded font-medium">{formData.zkpActive ? 'Enabled' : 'Disabled'}</span>
               </div>
 
               <div className={`p-3 rounded-xl border space-y-1 ${
@@ -1500,22 +1517,22 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
               }`}>
                 <div className={`flex items-center justify-between ${labelText}`}>
                   <span>TenderRegistry Hash</span>
-                  <button onClick={() => { navigator.clipboard.writeText(formData.contractHash); setCopiedHash(true); setTimeout(() => setCopiedHash(false), 2000); }} className="text-teal-500 hover:text-teal-400">
+                  <button onClick={() => { navigator.clipboard.writeText(formData.contractHash); setCopiedHash(true); setTimeout(() => setCopiedHash(false), 2000); }} className="text-slate-400 hover:text-slate-200">
                     {copiedHash ? <Check size={12} /> : <Copy size={12} />}
                   </button>
                 </div>
-                <div className="text-teal-400 font-bold truncate text-[10px]">{formData.contractHash}</div>
+                <div className="text-slate-300 font-medium truncate text-[10px]">{formData.contractHash}</div>
               </div>
             </div>
 
             <div className={`p-3.5 border rounded-xl space-y-2 ${
-              lightTheme ? 'bg-indigo-50/60 border-indigo-200 text-slate-800' : 'bg-gradient-to-br from-indigo-950/60 to-slate-950 border-indigo-500/30 text-slate-200'
+              lightTheme ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-300'
             }`}>
-              <div className="flex items-center space-x-1.5 text-indigo-500 font-bold text-xs">
-                <Lock size={13} />
+              <div className="flex items-center space-x-1.5 font-semibold text-xs">
+                <Lock size={13} className="text-slate-400" />
                 <span>ZK Privacy-Preserving Proof</span>
               </div>
-              <p className="text-[11px] leading-relaxed opacity-90">
+              <p className="text-[11px] leading-relaxed opacity-90 text-slate-400">
                 Zero-Knowledge verification allows the authority to verify vendor compliance without requiring unnecessary disclosure of sensitive vendor balance sheets.
               </p>
             </div>
@@ -1526,38 +1543,40 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
       {/* SECTION 13: PREVIEW MODAL (TENDER SUMMARY) */}
       {showPreviewModal && (
-        <div className={`fixed inset-0 w-screen h-screen backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto ${
-          lightTheme ? 'bg-slate-900/40' : 'bg-slate-950/20'
+        <div className={`fixed inset-0 w-screen h-screen backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto ${
+          lightTheme ? 'bg-slate-900/40' : 'bg-slate-950/60'
         }`}>
-          <div className={`rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4 transition-all ${modalCardBg}`}>
+          <div className={`rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4 transition-all ${modalCardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${modalHeaderBorder}`}>
               <div>
-                <span className="px-2.5 py-0.5 bg-teal-500/20 text-teal-500 dark:text-teal-300 text-[10px] font-mono font-bold rounded-full">Official Tender RFP Preview</span>
-                <h2 className={`text-lg font-bold mt-1 ${lightTheme ? 'text-slate-900' : 'text-white'}`}>{formData.title}</h2>
+                <span className="px-2.5 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-mono font-medium rounded-full">Official Tender RFP Preview</span>
+                <h2 className={`text-base font-bold mt-1 ${lightTheme ? 'text-slate-900' : 'text-white'}`}>{formData.title}</h2>
               </div>
-              <button onClick={() => setShowPreviewModal(false)} className={`p-2 rounded-lg font-bold transition ${lightTheme ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}>✕</button>
+              <button onClick={() => setShowPreviewModal(false)} className={`p-1.5 rounded-lg transition ${lightTheme ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                <X size={18} />
+              </button>
             </div>
 
             <div className={`space-y-4 font-mono text-xs p-4 rounded-xl border ${
-              lightTheme ? 'bg-slate-50/90 text-slate-800 border-slate-200' : 'bg-slate-950/60 text-slate-300 border-white/20'
+              lightTheme ? 'bg-slate-50 text-slate-800 border-slate-200' : 'bg-slate-950/80 text-slate-300 border-slate-800'
             }`}>
-              <div className={`grid grid-cols-2 gap-2 text-[11px] border-b pb-3 ${lightTheme ? 'border-slate-200' : 'border-white/20'}`}>
-                <div><span className="text-slate-400">Tender ID:</span> <span className="text-teal-500 dark:text-teal-400 font-bold">{formData.tenderId}</span></div>
-                <div><span className="text-slate-400">Ref No:</span> <span className={lightTheme ? 'text-slate-900 font-bold' : 'text-white'}>{formData.refNumber}</span></div>
-                <div><span className="text-slate-400">Category:</span> <span className={lightTheme ? 'text-slate-900 font-bold' : 'text-white'}>{formData.category}</span></div>
-                <div><span className="text-slate-400">Est. Budget:</span> <span className="text-amber-500 dark:text-amber-400 font-bold">{formatCurrency(formData.estimatedValue)}</span></div>
-                <div><span className="text-slate-400">Contract Duration:</span> <span className={lightTheme ? 'text-slate-900 font-bold' : 'text-white'}>{formData.contractDuration} {formData.contractDurationUnit}</span></div>
-                <div><span className="text-slate-400">Deadline:</span> <span className="text-rose-500 dark:text-rose-400">{formData.submissionDeadline}</span></div>
+              <div className={`grid grid-cols-2 gap-2 text-[11px] border-b pb-3 ${lightTheme ? 'border-slate-200' : 'border-slate-800'}`}>
+                <div><span className="text-slate-400">Tender ID:</span> <span className="text-slate-200 font-semibold">{formData.tenderId}</span></div>
+                <div><span className="text-slate-400">Ref No:</span> <span className="text-slate-200 font-semibold">{formData.refNumber}</span></div>
+                <div><span className="text-slate-400">Category:</span> <span className="text-slate-200 font-semibold">{formData.category}</span></div>
+                <div><span className="text-slate-400">Est. Budget:</span> <span className="text-slate-200 font-semibold">{formatCurrency(formData.estimatedValue)}</span></div>
+                <div><span className="text-slate-400">Contract Duration:</span> <span className="text-slate-200 font-semibold">{formData.contractDuration} {formData.contractDurationUnit}</span></div>
+                <div><span className="text-slate-400">Deadline:</span> <span className="text-slate-200 font-semibold">{formData.submissionDeadline}</span></div>
               </div>
 
               <div>
-                <span className={`font-bold block mb-1 ${lightTheme ? 'text-slate-900' : 'text-slate-300'}`}>Scope Summary:</span>
-                <p className={`font-sans text-xs ${lightTheme ? 'text-slate-700' : 'text-slate-200'}`}>{formData.detailedScope}</p>
+                <span className={`font-semibold block mb-1 ${lightTheme ? 'text-slate-900' : 'text-slate-200'}`}>Scope Summary:</span>
+                <p className={`font-sans text-xs ${lightTheme ? 'text-slate-700' : 'text-slate-300'}`}>{formData.detailedScope}</p>
               </div>
 
               <div>
-                <span className={`font-bold block mb-1 ${lightTheme ? 'text-slate-900' : 'text-slate-300'}`}>Zero-Knowledge Eligibility Gateways:</span>
-                <ul className="list-disc list-inside space-y-1 text-teal-600 dark:text-teal-300 text-[11px]">
+                <span className={`font-semibold block mb-1 ${lightTheme ? 'text-slate-900' : 'text-slate-200'}`}>Zero-Knowledge Eligibility Gateways:</span>
+                <ul className="list-disc list-inside space-y-1 text-slate-300 text-[11px]">
                   {formData.eligibilityRequirements.map((r, idx) => (
                     <li key={idx}>{r.name} ({r.dataField} {r.operator} {r.value}) — {r.verificationMethod}</li>
                   ))}
@@ -1565,18 +1584,18 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
               </div>
 
               <div>
-                <span className={`font-bold block mb-1 ${lightTheme ? 'text-slate-900' : 'text-slate-300'}`}>Applicable Governance Directives:</span>
+                <span className={`font-semibold block mb-1 ${lightTheme ? 'text-slate-900' : 'text-slate-200'}`}>Applicable Governance Directives:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {formData.governancePolicies.filter(p => p.selected).map(p => (
-                    <span key={p.id} className={`px-2 py-0.5 rounded font-mono text-[10px] ${lightTheme ? 'bg-slate-200 text-teal-700' : 'bg-white/10 text-teal-300'}`}>{p.id} ({p.title})</span>
+                    <span key={p.id} className={`px-2 py-0.5 rounded font-mono text-[10px] ${lightTheme ? 'bg-slate-200 text-slate-800' : 'bg-slate-800 text-slate-300 border border-slate-700'}`}>{p.id} ({p.title})</span>
                   ))}
                 </div>
               </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={handleSaveDraft} className={`px-4 py-2 rounded-xl transition ${modalCancelBtn}`}>Save Draft</button>
-              <button onClick={() => setShowPreviewModal(false)} className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl transition shadow">Edit Tender</button>
+              <button onClick={handleSaveDraft} className={`px-4 py-2 rounded-lg transition text-xs ${modalCancelBtn}`}>Save Draft</button>
+              <button onClick={() => setShowPreviewModal(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg transition shadow-sm">Edit Tender</button>
             </div>
           </div>
         </div>
@@ -1584,15 +1603,17 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
       {/* MODAL: ADD ELIGIBILITY REQUIREMENT */}
       {showAddEligibilityModal && (
-        <div className={`fixed inset-0 w-screen h-screen backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto ${
-          lightTheme ? 'bg-slate-900/40' : 'bg-slate-950/20'
+        <div className={`fixed inset-0 w-screen h-screen backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto ${
+          lightTheme ? 'bg-slate-900/40' : 'bg-slate-950/60'
         }`}>
-          <div className={`rounded-2xl max-w-lg w-full p-6 space-y-4 transition-all ${modalCardBg}`}>
+          <div className={`rounded-xl max-w-lg w-full p-6 space-y-4 transition-all ${modalCardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${modalHeaderBorder}`}>
-              <h3 className="font-bold text-sm text-amber-500 dark:text-amber-400 flex items-center gap-1.5">
+              <h3 className={`font-bold text-sm flex items-center gap-1.5 ${lightTheme ? 'text-slate-900' : 'text-white'}`}>
                 <Plus size={16} /> Add Eligibility Requirement
               </h3>
-              <button onClick={() => setShowAddEligibilityModal(false)} className={`p-1 font-bold rounded transition ${lightTheme ? 'text-slate-500 hover:text-slate-900' : 'text-slate-300 hover:text-white'}`}>✕</button>
+              <button onClick={() => setShowAddEligibilityModal(false)} className={`p-1.5 rounded-lg transition ${lightTheme ? 'text-slate-500 hover:text-slate-900' : 'text-slate-400 hover:text-white'}`}>
+                <X size={18} />
+              </button>
             </div>
 
             <div className="space-y-3">
@@ -1653,8 +1674,8 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
             </div>
 
             <div className={`flex justify-end gap-2 pt-3 border-t ${modalHeaderBorder}`}>
-              <button onClick={() => setShowAddEligibilityModal(false)} className={`px-4 py-2 rounded-xl transition ${modalCancelBtn}`}>Cancel</button>
-              <button onClick={handleAddEligibility} className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition shadow">Add Requirement</button>
+              <button onClick={() => setShowAddEligibilityModal(false)} className={`px-4 py-2 rounded-lg transition text-xs ${modalCancelBtn}`}>Cancel</button>
+              <button onClick={handleAddEligibility} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg transition shadow-sm">Add Requirement</button>
             </div>
           </div>
         </div>
@@ -1662,15 +1683,17 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
       {/* MODAL: ADD REQUIRED DOCUMENT */}
       {showAddDocModal && (
-        <div className={`fixed inset-0 w-screen h-screen backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto ${
-          lightTheme ? 'bg-slate-900/40' : 'bg-slate-950/20'
+        <div className={`fixed inset-0 w-screen h-screen backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto ${
+          lightTheme ? 'bg-slate-900/40' : 'bg-slate-950/60'
         }`}>
-          <div className={`rounded-2xl max-w-lg w-full p-6 space-y-4 transition-all ${modalCardBg}`}>
+          <div className={`rounded-xl max-w-lg w-full p-6 space-y-4 transition-all ${modalCardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${modalHeaderBorder}`}>
-              <h3 className="font-bold text-sm text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
+              <h3 className={`font-bold text-sm flex items-center gap-1.5 ${lightTheme ? 'text-slate-900' : 'text-white'}`}>
                 <Plus size={16} /> Add Required Document
               </h3>
-              <button onClick={() => setShowAddDocModal(false)} className={`p-1 font-bold rounded transition ${lightTheme ? 'text-slate-500 hover:text-slate-900' : 'text-slate-300 hover:text-white'}`}>✕</button>
+              <button onClick={() => setShowAddDocModal(false)} className={`p-1.5 rounded-lg transition ${lightTheme ? 'text-slate-500 hover:text-slate-900' : 'text-slate-400 hover:text-white'}`}>
+                <X size={18} />
+              </button>
             </div>
 
             <div className="space-y-3">
@@ -1716,8 +1739,8 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
             </div>
 
             <div className={`flex justify-end gap-2 pt-3 border-t ${modalHeaderBorder}`}>
-              <button onClick={() => setShowAddDocModal(false)} className={`px-4 py-2 rounded-xl transition ${modalCancelBtn}`}>Cancel</button>
-              <button onClick={handleAddRequiredDoc} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition shadow">Add Document</button>
+              <button onClick={() => setShowAddDocModal(false)} className={`px-4 py-2 rounded-lg transition text-xs ${modalCancelBtn}`}>Cancel</button>
+              <button onClick={handleAddRequiredDoc} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg transition shadow-sm">Add Document</button>
             </div>
           </div>
         </div>
@@ -1725,15 +1748,17 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
       {/* MODAL: ADD EVALUATION CRITERION */}
       {showAddCriterionModal && (
-        <div className={`fixed inset-0 w-screen h-screen backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto ${
-          lightTheme ? 'bg-slate-900/40' : 'bg-slate-950/20'
+        <div className={`fixed inset-0 w-screen h-screen backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto ${
+          lightTheme ? 'bg-slate-900/40' : 'bg-slate-950/60'
         }`}>
-          <div className={`rounded-2xl max-w-lg w-full p-6 space-y-4 transition-all ${modalCardBg}`}>
+          <div className={`rounded-xl max-w-lg w-full p-6 space-y-4 transition-all ${modalCardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${modalHeaderBorder}`}>
-              <h3 className="font-bold text-sm text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+              <h3 className={`font-bold text-sm flex items-center gap-1.5 ${lightTheme ? 'text-slate-900' : 'text-white'}`}>
                 <Plus size={16} /> Add Evaluation Criterion
               </h3>
-              <button onClick={() => setShowAddCriterionModal(false)} className={`p-1 font-bold rounded transition ${lightTheme ? 'text-slate-500 hover:text-slate-900' : 'text-slate-300 hover:text-white'}`}>✕</button>
+              <button onClick={() => setShowAddCriterionModal(false)} className={`p-1.5 rounded-lg transition ${lightTheme ? 'text-slate-500 hover:text-slate-900' : 'text-slate-400 hover:text-white'}`}>
+                <X size={18} />
+              </button>
             </div>
 
             <div className="space-y-3">
@@ -1754,8 +1779,8 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
             </div>
 
             <div className={`flex justify-end gap-2 pt-3 border-t ${modalHeaderBorder}`}>
-              <button onClick={() => setShowAddCriterionModal(false)} className={`px-4 py-2 rounded-xl transition ${modalCancelBtn}`}>Cancel</button>
-              <button onClick={handleAddCriterion} className="px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-bold rounded-xl transition shadow">Add Criterion</button>
+              <button onClick={() => setShowAddCriterionModal(false)} className={`px-4 py-2 rounded-lg transition text-xs ${modalCancelBtn}`}>Cancel</button>
+              <button onClick={handleAddCriterion} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg transition shadow-sm">Add Criterion</button>
             </div>
           </div>
         </div>
@@ -1763,15 +1788,17 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
       {/* MODAL: ADD TENDER RULE */}
       {showAddRuleModal && (
-        <div className={`fixed inset-0 w-screen h-screen backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto ${
-          lightTheme ? 'bg-slate-900/40' : 'bg-slate-950/20'
+        <div className={`fixed inset-0 w-screen h-screen backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto ${
+          lightTheme ? 'bg-slate-900/40' : 'bg-slate-950/60'
         }`}>
-          <div className={`rounded-2xl max-w-md w-full p-6 space-y-4 transition-all ${modalCardBg}`}>
+          <div className={`rounded-xl max-w-md w-full p-6 space-y-4 transition-all ${modalCardBg}`}>
             <div className={`flex items-center justify-between border-b pb-3 ${modalHeaderBorder}`}>
-              <h3 className="font-bold text-sm text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
+              <h3 className={`font-bold text-sm flex items-center gap-1.5 ${lightTheme ? 'text-slate-900' : 'text-white'}`}>
                 <Plus size={16} /> Add Tender-Specific Rule
               </h3>
-              <button onClick={() => setShowAddRuleModal(false)} className={`p-1 font-bold rounded transition ${lightTheme ? 'text-slate-500 hover:text-slate-900' : 'text-slate-300 hover:text-white'}`}>✕</button>
+              <button onClick={() => setShowAddRuleModal(false)} className={`p-1.5 rounded-lg transition ${lightTheme ? 'text-slate-500 hover:text-slate-900' : 'text-slate-400 hover:text-white'}`}>
+                <X size={18} />
+              </button>
             </div>
 
             <div className="space-y-3">
@@ -1782,8 +1809,8 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
             </div>
 
             <div className={`flex justify-end gap-2 pt-3 border-t ${modalHeaderBorder}`}>
-              <button onClick={() => setShowAddRuleModal(false)} className={`px-4 py-2 rounded-xl transition ${modalCancelBtn}`}>Cancel</button>
-              <button onClick={handleAddTenderRule} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition shadow">Add Rule</button>
+              <button onClick={() => setShowAddRuleModal(false)} className={`px-4 py-2 rounded-lg transition text-xs ${modalCancelBtn}`}>Cancel</button>
+              <button onClick={handleAddTenderRule} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg transition shadow-sm">Add Rule</button>
             </div>
           </div>
         </div>
@@ -1791,32 +1818,32 @@ export default function CreateTenderForm({ onPublishSuccess, onToast, currentUse
 
       {/* BLOCKCHAIN PUBLISHING ANIMATION MODAL */}
       {isDeploying && (
-        <div className="fixed inset-0 w-screen h-screen bg-slate-950/20 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900/50 backdrop-blur-2xl backdrop-saturate-150 border border-teal-400/40 rounded-2xl max-w-md w-full p-6 space-y-6 shadow-2xl text-center text-white">
-            <div className="w-16 h-16 bg-teal-500/20 text-teal-400 rounded-full flex items-center justify-center mx-auto border border-teal-500/40 animate-pulse">
-              <Rocket size={32} />
+        <div className="fixed inset-0 w-screen h-screen bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-6 shadow-2xl text-center text-white">
+            <div className="w-14 h-14 bg-slate-800 text-blue-400 rounded-full flex items-center justify-center mx-auto border border-slate-700">
+              <Rocket size={28} />
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-white">Registering Tender on Blockchain Ledger</h3>
+              <h3 className="text-base font-bold text-white">Registering Tender on Blockchain Ledger</h3>
               <p className="text-xs text-slate-400 mt-1">Anchoring Tender ID & Data Hash to TenderRegistry Contract...</p>
             </div>
 
-            <div className="space-y-3 font-mono text-xs text-left bg-slate-950/60 p-4 rounded-xl border border-white/20">
-              <div className={`flex items-center space-x-2 ${deployStep >= 1 ? 'text-teal-400 font-bold' : 'text-slate-600'}`}>
-                <span>{deployStep >= 1 ? '✓' : '○'}</span>
+            <div className="space-y-3 font-mono text-xs text-left bg-slate-950 p-4 rounded-xl border border-slate-800">
+              <div className={`flex items-center space-x-2 ${deployStep >= 1 ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                <span>{deployStep >= 1 ? <Check size={14} className="text-emerald-400 inline" /> : '•'}</span>
                 <span>Generating Cryptographic Hashes for Tender Document</span>
               </div>
-              <div className={`flex items-center space-x-2 ${deployStep >= 2 ? 'text-teal-400 font-bold' : 'text-slate-600'}`}>
-                <span>{deployStep >= 2 ? '✓' : '○'}</span>
+              <div className={`flex items-center space-x-2 ${deployStep >= 2 ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                <span>{deployStep >= 2 ? <Check size={14} className="text-emerald-400 inline" /> : '•'}</span>
                 <span>Verifying Eligibility Rules & ZKP Circuit Keys</span>
               </div>
-              <div className={`flex items-center space-x-2 ${deployStep >= 3 ? 'text-teal-400 font-bold' : 'text-slate-600'}`}>
-                <span>{deployStep >= 3 ? '✓' : '○'}</span>
+              <div className={`flex items-center space-x-2 ${deployStep >= 3 ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                <span>{deployStep >= 3 ? <Check size={14} className="text-emerald-400 inline" /> : '•'}</span>
                 <span>Executing On-Chain Transaction & Paying Gas Fee via Authority Relayer Wallet</span>
               </div>
-              <div className={`flex items-center space-x-2 ${deployStep >= 4 ? 'text-emerald-400 font-bold' : 'text-slate-600'}`}>
-                <span>{deployStep >= 4 ? '✓' : '○'}</span>
+              <div className={`flex items-center space-x-2 ${deployStep >= 4 ? 'text-emerald-400 font-bold' : 'text-slate-500'}`}>
+                <span>{deployStep >= 4 ? <Check size={14} className="text-emerald-400 inline" /> : '•'}</span>
                 <span>On-Chain Creation Confirmed — Tender Published & Visible to Vendors!</span>
               </div>
             </div>

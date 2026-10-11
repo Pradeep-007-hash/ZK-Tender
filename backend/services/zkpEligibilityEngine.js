@@ -64,7 +64,7 @@ function getTenderEligibilityCriteria(tender) {
  * Private witness: { experience, turnover, projects }
  * Public inputs: { minimumExperience, minimumTurnover, minimumProjects, policyHash }
  */
-function generateEligibilityProof(tenderId, vendorId, privateWitness, publicRequirements) {
+function generateEligibilityProof(tenderId, vendorId, privateWitness, publicRequirements, extraSignals = {}) {
   const exp = Number(privateWitness?.experience ?? 0);
   const turn = Number(privateWitness?.turnover ?? 0);
   const proj = Number(privateWitness?.projects ?? 0);
@@ -105,7 +105,8 @@ function generateEligibilityProof(tenderId, vendorId, privateWitness, publicRequ
         minimumProjects: minProj,
         policyHash,
         eligible: 0,
-        verificationProofId: "ZKP-FAIL-" + proofSeed.substring(0, 8).toUpperCase()
+        verificationProofId: "ZKP-FAIL-" + proofSeed.substring(0, 8).toUpperCase(),
+        ...(extraSignals || {})
       }
     };
   }
@@ -145,7 +146,8 @@ function generateEligibilityProof(tenderId, vendorId, privateWitness, publicRequ
       minimumProjects: minProj,
       policyHash,
       eligible: 1,
-      verificationProofId: "ZKP-ELIGIBLE-" + proofSeed.substring(0, 8).toUpperCase()
+      verificationProofId: "ZKP-ELIGIBLE-" + proofSeed.substring(0, 8).toUpperCase(),
+      ...(extraSignals || {})
     }
   };
 }
@@ -163,7 +165,12 @@ function verifyEligibilityProof(proof, publicSignals, tenderRequirements) {
     return { verified: false, eligible: false, message: "Malformed Groth16 proof structure" };
   }
 
-  // Check if proof elements are non-zero
+  // Check if proof elements are non-zero and properly encoded
+  const isValidHex = (val) => typeof val === "string" && /^0x[0-9a-fA-F]+$/.test(val);
+  if (!isValidHex(pi_a[0]) || !isValidHex(pi_c[0])) {
+    return { verified: false, eligible: false, message: "Tampered or invalid Groth16 proof element encoding" };
+  }
+
   const isNonZeroProof = pi_a[0] !== "0x0" && pi_c[0] !== "0x0";
   if (!isNonZeroProof) {
     return { verified: false, eligible: false, message: "Invalid Groth16 proof parameters" };
@@ -205,7 +212,9 @@ function verifyEligibilityProof(proof, publicSignals, tenderRequirements) {
     eligible: verified,
     tenderId: tenderRequirements.tenderId,
     policyHash: tenderRequirements.policyHash,
-    verificationProofId: publicSignals.verificationProofId || "ZKP-VERIFIED"
+    verificationProofId: publicSignals.verificationProofId || "ZKP-VERIFIED",
+    verifiedViaVc: Boolean(publicSignals.verifiedViaVc),
+    credentialId: publicSignals.credentialId || null
   };
 }
 

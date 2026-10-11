@@ -17,6 +17,16 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: Date,
   otpCode: String,
   otpExpires: Date,
+  did: { type: String, default: "" },
+  primaryWallet: { type: String, default: "" },
+  walletAddress: { type: String, default: "" },
+  didMethod: { type: String, default: "ethr" },
+  didNetwork: { type: String, default: "sepolia" },
+  didCreatedAt: { type: Date },
+  department: { type: String, default: "" },
+  designation: { type: String, default: "" },
+  clearanceLevel: { type: String, default: "Class-1 Government Officer (Level 5)" },
+  badgeId: { type: String, default: "" },
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);

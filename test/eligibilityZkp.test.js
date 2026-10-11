@@ -125,4 +125,43 @@ describe("Vendor Eligibility ZKP Verification Engine", function () {
     expect(jsonStr).to.not.contain('"projects":7');
   });
 
+  // Case 9: Verifying eligibility through Verifiable Credential (VC) metadata binding
+  it("Case 9: Verifying eligibility through Verifiable Credential (VC) must preserve VC metadata in publicSignals", function () {
+    const vcWitness = { experience: 8, turnover: 25, projects: 7 };
+    const vcSignals = {
+      verifiedViaVc: true,
+      credentialId: "VC-853591",
+      issuer: "did:key:z6MkIssuer001GovTenderAuthority99812"
+    };
+
+    const proofRes = generateEligibilityProof("T001", "VEN-001", vcWitness, tenderT001Reqs, vcSignals);
+    expect(proofRes.eligible).to.be.true;
+    expect(proofRes.publicSignals.verifiedViaVc).to.be.true;
+    expect(proofRes.publicSignals.credentialId).to.equal("VC-853591");
+
+    const verifyRes = verifyEligibilityProof(proofRes.proof, proofRes.publicSignals, tenderT001Reqs);
+    expect(verifyRes.verified).to.be.true;
+    expect(verifyRes.eligible).to.be.true;
+    expect(verifyRes.verifiedViaVc).to.be.true;
+    expect(verifyRes.credentialId).to.equal("VC-853591");
+  });
+
+  // Case 10: Ineligible Verifiable Credential (VC) must be rejected by ZKP gate
+  it("Case 10: Ineligible Verifiable Credential (VC) with insufficient turnover must be REJECTED", function () {
+    const ineligibleVcWitness = { experience: 8, turnover: 5, projects: 7 }; // turnover 5 < min 10
+    const vcSignals = {
+      verifiedViaVc: true,
+      credentialId: "VC-INELIGIBLE-009"
+    };
+
+    const proofRes = generateEligibilityProof("T001", "VEN-001", ineligibleVcWitness, tenderT001Reqs, vcSignals);
+    expect(proofRes.eligible).to.be.false;
+    expect(proofRes.proofValid).to.be.false;
+
+    const verifyRes = verifyEligibilityProof(proofRes.proof, proofRes.publicSignals, tenderT001Reqs);
+    expect(verifyRes.verified).to.be.false;
+    expect(verifyRes.eligible).to.be.false;
+  });
+
 });
+

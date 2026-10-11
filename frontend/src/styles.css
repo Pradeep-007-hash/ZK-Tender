@@ -2242,6 +2242,77 @@ input[type="checkbox"]:checked + .toggle,
   color: #ffffff !important;
 }
 
+/* Ensure Inspect & Evaluate Tender button text is always crisp white in both light and dark themes */
+.btn-evaluate,
+.btn-evaluate *,
+.btn-evaluate span,
+.btn-evaluate i,
+.light-theme .btn-evaluate,
+.light-theme .btn-evaluate *,
+.light-theme .btn-evaluate span,
+.light-theme .btn-evaluate i,
+button.btn-evaluate,
+button.btn-evaluate span,
+button.btn-evaluate i,
+.light-theme button.btn-evaluate,
+.light-theme button.btn-evaluate span,
+.light-theme button.btn-evaluate i {
+  color: #ffffff !important;
+}
+
+.btn-evaluate {
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%) !important;
+  color: #ffffff !important;
+}
+
+.btn-evaluate:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #047857 100%) !important;
+  color: #ffffff !important;
+}
+
+.light-theme .btn-evaluate {
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%) !important;
+  color: #ffffff !important;
+}
+
+.light-theme .btn-evaluate:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #047857 100%) !important;
+  color: #ffffff !important;
+}
+
+/* Ensure Active Tenders and Tender ID badges look pristine in all UI themes */
+.badge-active-tenders {
+  background-color: rgba(13, 148, 136, 0.15) !important;
+  border: 1px solid rgba(20, 184, 166, 0.4) !important;
+  color: #14b8a6 !important;
+}
+
+.badge-active-tenders,
+.badge-active-tenders span {
+  color: #14b8a6 !important;
+}
+
+.light-theme .badge-active-tenders {
+  background-color: #f0fdfa !important;
+  border: 1px solid #99f6e4 !important;
+  color: #0f766e !important;
+}
+
+.light-theme .badge-active-tenders,
+.light-theme .badge-active-tenders span {
+  color: #0f766e !important;
+}
+
+.badge-tender-id {
+  color: #2dd4bf !important;
+}
+
+.light-theme .badge-tender-id {
+  color: #0d9488 !important;
+}
+
+
+
 /* Inputs & Form Controls */
 .light-theme input,
 .light-theme select,

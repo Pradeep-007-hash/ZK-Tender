@@ -245,7 +245,17 @@ exports.login = async (req, res) => {
         gstNo: user.gstNo,
         address: user.address,
         role: user.role || (cleanEmail === "issuer@gov.in" ? "ISSUER" : cleanEmail.includes("officer") ? "AUTHORITY" : "VENDOR"),
-        organizationId: user.organizationId || (cleanEmail === "issuer@gov.in" ? "GOV_ISSUER_001" : cleanEmail.includes("officer") ? "GOV001" : "")
+        organizationId: user.organizationId || (cleanEmail === "issuer@gov.in" ? "GOV_ISSUER_001" : cleanEmail.includes("officer") ? "GOV001" : ""),
+        did: user.did || "",
+        primaryWallet: user.primaryWallet || user.walletAddress || "",
+        walletAddress: user.walletAddress || "",
+        didMethod: user.didMethod || "ethr",
+        didNetwork: user.didNetwork || "sepolia",
+        didCreatedAt: user.didCreatedAt || null,
+        department: user.department || (cleanEmail === "issuer@gov.in" ? "Ministry of Electronics & IT" : cleanEmail.includes("officer") ? "Ministry of Procurement & Infrastructure" : ""),
+        designation: user.designation || (cleanEmail === "issuer@gov.in" ? "Head of Verifiable Credentials" : cleanEmail.includes("officer") ? "Senior Evaluation Officer" : ""),
+        clearanceLevel: user.clearanceLevel || "Class-1 Government Officer (Level 5)",
+        badgeId: user.badgeId || (cleanEmail.includes("officer") ? "OFFICER-GOV-9872" : cleanEmail === "issuer@gov.in" ? "ISSUER-GOV-001" : "")
       },
     });
   } catch (error) {
@@ -300,7 +310,17 @@ exports.oauthLogin = async (req, res) => {
         gstNo: user.gstNo,
         address: user.address,
         role: user.role,
-        organizationId: user.organizationId
+        organizationId: user.organizationId,
+        did: user.did || "",
+        primaryWallet: user.primaryWallet || user.walletAddress || "",
+        walletAddress: user.walletAddress || "",
+        didMethod: user.didMethod || "ethr",
+        didNetwork: user.didNetwork || "sepolia",
+        didCreatedAt: user.didCreatedAt || null,
+        department: user.department || "",
+        designation: user.designation || "",
+        clearanceLevel: user.clearanceLevel || "Class-1 Government Officer (Level 5)",
+        badgeId: user.badgeId || ""
       }
     });
   } catch (error) {
@@ -311,7 +331,7 @@ exports.oauthLogin = async (req, res) => {
 
 // 7. Update User Profile Controller
 exports.updateProfile = async (req, res) => {
-  const { email, name, company, phone, gstNo, address, role, organizationId } = req.body;
+  const { email, name, company, phone, gstNo, address, role, organizationId, department, designation, clearanceLevel, badgeId, walletAddress } = req.body;
 
   if (!email) {
     return res.status(400).json({ success: false, message: "User email is required to update profile." });
@@ -319,21 +339,36 @@ exports.updateProfile = async (req, res) => {
 
   try {
     const cleanEmail = email.toLowerCase().trim();
-    let user = await User.findOne({ email: cleanEmail });
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User account not found in database." });
+    let existingUser = await User.findOne({ email: cleanEmail });
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (company !== undefined) updateData.company = company;
+    if (phone !== undefined) updateData.phone = phone;
+    if (gstNo !== undefined) updateData.gstNo = gstNo;
+    if (address !== undefined) updateData.address = address;
+    if (role !== undefined) updateData.role = role;
+    if (organizationId !== undefined) updateData.organizationId = organizationId;
+    if (department !== undefined) updateData.department = department;
+    if (designation !== undefined) updateData.designation = designation;
+    if (clearanceLevel !== undefined) updateData.clearanceLevel = clearanceLevel;
+    if (badgeId !== undefined) updateData.badgeId = badgeId;
+
+    if (walletAddress) {
+      updateData.walletAddress = walletAddress;
+      // Set primaryWallet on first wallet connection if not set yet
+      if (!existingUser || !existingUser.primaryWallet) {
+        updateData.primaryWallet = walletAddress;
+      }
     }
 
-    if (name) user.name = name;
-    if (company) user.company = company;
-    if (phone) user.phone = phone;
-    if (gstNo) user.gstNo = gstNo;
-    if (address) user.address = address;
-    if (role) user.role = role;
-    if (organizationId) user.organizationId = organizationId;
+    let user = await User.findOneAndUpdate(
+      { email: cleanEmail },
+      { $set: updateData },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
 
-    await user.save();
     console.log(`[PROFILE UPDATE SUCCESS] Saved updated details for ${cleanEmail} in MongoDB ZK-TendersDB`);
 
     return res.status(200).json({
@@ -347,7 +382,17 @@ exports.updateProfile = async (req, res) => {
         gstNo: user.gstNo,
         address: user.address,
         role: user.role,
-        organizationId: user.organizationId
+        organizationId: user.organizationId,
+        did: user.did || "",
+        primaryWallet: user.primaryWallet || user.walletAddress || "",
+        walletAddress: user.walletAddress || "",
+        didMethod: user.didMethod || "ethr",
+        didNetwork: user.didNetwork || "sepolia",
+        didCreatedAt: user.didCreatedAt || null,
+        department: user.department || "",
+        designation: user.designation || "",
+        clearanceLevel: user.clearanceLevel || "Class-1 Government Officer (Level 5)",
+        badgeId: user.badgeId || ""
       }
     });
   } catch (error) {

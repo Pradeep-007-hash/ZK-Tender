@@ -134,11 +134,17 @@ function issueVendorCredential({
  * Verifies a Vendor Credential bundle.
  */
 function verifyVendorCredential(credentialBundle, expectedVendorId = null) {
-  if (!credentialBundle || !credentialBundle.credential || !credentialBundle.signature) {
+  if (!credentialBundle) {
     return { valid: false, reason: "Missing credential object or ML-DSA signature" };
   }
 
-  const { credential, signature, authorityPublicKey } = credentialBundle;
+  const credential = credentialBundle.credential || credentialBundle.credentialData || credentialBundle.credentialSubject;
+  const signature = credentialBundle.signature || credentialBundle.sig || credentialBundle.proof?.proofValue;
+  const authorityPublicKey = credentialBundle.authorityPublicKey;
+
+  if (!credential || !signature) {
+    return { valid: false, reason: "Missing credential object or ML-DSA signature" };
+  }
 
   // 1. ML-DSA-65 Cryptographic Signature Verification
   const isSigValid = verifyData(credential, signature, authorityPublicKey || getAuthorityPublicKeyHex());
@@ -159,7 +165,12 @@ function verifyVendorCredential(credentialBundle, expectedVendorId = null) {
     return { valid: false, reason: "Vendor credential has expired" };
   }
 
-  // 4. Issuer Check
+  // 4. Revocation Status Check
+  if (credential.status === "REVOKED" || credentialBundle.status === "REVOKED" || credential.revoked === true) {
+    return { valid: false, reason: "Vendor credential has been revoked by the issuing authority" };
+  }
+
+  // 5. Issuer Check
   if (!credential.issuer) {
     return { valid: false, reason: "Invalid or missing credential issuer" };
   }

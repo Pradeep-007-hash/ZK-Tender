@@ -66,7 +66,15 @@ const VendorBidSchema = new mongoose.Schema({
   submittedAt: {
     type: Date,
     default: Date.now
+  },
+  clarifications: {
+    type: Array,
+    default: []
   }
 }, { strict: false });
+
+
+// Enforce single application per vendor per tender constraint
+VendorBidSchema.index({ tenderId: 1, vendorId: 1 }, { unique: true });
 
 module.exports = mongoose.model('VendorBid', VendorBidSchema);

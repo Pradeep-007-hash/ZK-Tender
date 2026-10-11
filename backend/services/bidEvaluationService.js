@@ -283,7 +283,30 @@ function evaluateTenderBids(tenderConfig, allVendorBids) {
   // 5. Ranking & Tie Handling
   const rankedBids = rankBids(wsmScoredBids);
 
-  const winnerVendorId = rankedBids.length > 0 ? rankedBids[0].vendorId : null;
+  const enrichedRankings = rankedBids.map(bid => ({
+    ...bid,
+    companyName: bid.vendorName || bid.companyName || `Vendor ${bid.vendorId}`,
+    evaluationRank: `Rank #${bid.rank}${bid.rank === 1 ? ' (Winner)' : ''}`,
+    evaluationStatus: bid.rank === 1 ? 'WINNER / AWARDED' : (bid.rank === 2 ? 'QUALIFIED (RUNNER-UP)' : `QUALIFIED (RANK ${bid.rank})`),
+    isWinner: bid.rank === 1
+  }));
+
+  // Disqualified Bids (ZKP Proof Failed / Ineligible)
+  const disqualifiedBids = allVendorBids
+    .filter(bid => !eligibleBids.includes(bid))
+    .map(bid => ({
+      ...bid,
+      companyName: bid.vendorName || bid.companyName || `Vendor ${bid.vendorId}`,
+      rank: null,
+      evaluationRank: 'Disqualified / Excluded',
+      isWinner: false,
+      finalScore: 0,
+      scorePercentage: 0,
+      evaluationStatus: 'DISQUALIFIED (ZKP FAILED)'
+    }));
+
+  const winnerObj = enrichedRankings.length > 0 ? enrichedRankings[0] : null;
+  const winnerVendorId = winnerObj ? winnerObj.vendorId : null;
 
   return {
     success: true,
@@ -294,8 +317,11 @@ function evaluateTenderBids(tenderConfig, allVendorBids) {
     criteriaConfig,
     weights,
     ahpSummary,
-    rankings: rankedBids,
+    rankings: enrichedRankings,
+    disqualifiedBids,
+    allBidders: [...enrichedRankings, ...disqualifiedBids],
     winner: winnerVendorId,
+    winnerDetails: winnerObj,
     evaluatedAt: new Date().toISOString()
   };
 }
