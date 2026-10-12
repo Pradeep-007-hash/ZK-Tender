@@ -18,94 +18,112 @@ const initialBlockchainBlocks = [
 
 const defaultActiveTenders = [
   {
-    id: 'TND-2026-6868',
-    title: 'Modernization & Digital Infrastructure Upgrade',
-    department: 'Dept of Urban Infrastructure & Smart Mobility',
-    category: 'IT & Software',
-    tenderType: 'E-Tender',
-    method: 'Quality & Cost Based Selection (QCBS)',
-    budget: 240000000,
-    pubDate: '01 Sep 2026',
-    closingDate: '30 Sep 2026',
-    status: 'Active',
-    bidsCount: 4,
-    zkpRule: 'Revenue ≥ ₹1,00,00,000 (Groth16 Range Proof)',
-    description: 'Enterprise city-scale digital infrastructure upgrade and zero-knowledge procurement system.'
-  },
-  {
-    id: 'TND-2026-5120',
-    title: 'Smart City High-Speed Optical Fiber Ring',
-    department: 'Ministry of Communications & Digital Highways',
-    category: 'Telecommunications',
+    id: 'TN-PWD-2026-INFRA-001',
+    title: 'Construction of Four-Lane Bypass Highway and Smart Toll Plaza',
+    department: 'Tamil Nadu Public Works Department (TN-PWD)',
+    category: 'Infrastructure',
     tenderType: 'Open Tender',
     method: 'Competitive Bidding',
     budget: 450000000,
-    pubDate: '03 Sep 2026',
-    closingDate: '05 Oct 2026',
+    pubDate: '15 Oct 2026',
+    closingDate: '15 Nov 2026',
     status: 'Active',
-    bidsCount: 5,
-    zkpRule: 'Revenue ≥ ₹2,50,00,000 (Groth16 Range Proof)',
-    description: 'Underground fiber optic ring network connecting administrative centers and research hubs.'
+    bidsCount: 4,
+    minimumExperience: 7,
+    minimumTurnover: 15,
+    minimumProjects: 4,
+    zkpRule: 'Min Exp ≥ 7 Yrs, Turnover ≥ ₹15 Cr, Projects ≥ 4 (Groth16)',
+    description: 'EPC construction of a 24.5 km 4-lane bypass highway with RFID smart toll plazas.'
   },
   {
-    id: 'TND-2026-4401',
-    title: 'Metropolitan Clean Water Distribution Grid',
-    department: 'Department of Public Works & Water Resources',
-    category: 'Civil Works',
-    tenderType: 'E-Tender',
-    method: 'Competitive Bidding',
-    budget: 180000000,
-    pubDate: '05 Sep 2026',
-    closingDate: '12 Oct 2026',
+    id: 'TN-DICT-2026-IT-002',
+    title: 'Development of Decentralized Citizen Identity and Document Verification Portal',
+    department: 'Department of Information Technology & Digital Services',
+    category: 'IT & Software',
+    tenderType: 'Open Tender',
+    method: 'Quality & Cost Based Selection (QCBS)',
+    budget: 85000000,
+    pubDate: '16 Oct 2026',
+    closingDate: '08 Nov 2026',
     status: 'Active',
     bidsCount: 3,
-    zkpRule: 'Revenue ≥ ₹1,50,00,000 (Groth16 Range Proof)',
-    description: 'Automated municipal water treatment, telemetry flow sensors, and distribution pipeline.'
+    minimumExperience: 4,
+    minimumTurnover: 5,
+    minimumProjects: 3,
+    zkpRule: 'Min Exp ≥ 4 Yrs, Turnover ≥ ₹5 Cr, Projects ≥ 3 (Groth16)',
+    description: 'Statewide Web3 and W3C DID-compliant decentralized citizen identity portal.'
   },
   {
-    id: 'TND-2026-3219',
-    title: 'Hospital Management & Healthcare Telemetry System',
-    department: 'Ministry of Health & Family Welfare',
+    id: 'IN-TNEB-2026-PWR-003',
+    title: 'Installation of 50MW Grid-Connected Solar Photovoltaic Power Plant',
+    department: 'Tamil Nadu Generation and Distribution Corporation (TANGEDCO)',
+    category: 'Renewable Energy',
+    tenderType: 'Open Tender',
+    method: 'Competitive Bidding',
+    budget: 2200000000,
+    pubDate: '18 Oct 2026',
+    closingDate: '30 Nov 2026',
+    status: 'Active',
+    bidsCount: 5,
+    minimumExperience: 8,
+    minimumTurnover: 22,
+    minimumProjects: 5,
+    zkpRule: 'Min Exp ≥ 8 Yrs, Turnover ≥ ₹22 Cr, Projects ≥ 5 (Groth16)',
+    description: 'Turnkey EPC deployment of 50MW ground-mounted solar plant with automated SCADA.'
+  },
+  {
+    id: 'IN-CMRL-2026-TRN-004',
+    title: 'Supply and Maintenance of Electric Bus Fleet for Metro Last-Mile Connectivity',
+    department: 'Chennai Metro Rail Limited (CMRL)',
+    category: 'Transportation',
+    tenderType: 'Open Tender',
+    method: 'Competitive Bidding',
+    budget: 1200000000,
+    pubDate: '20 Oct 2026',
+    closingDate: '05 Dec 2026',
+    status: 'Active',
+    bidsCount: 3,
+    minimumExperience: 6,
+    minimumTurnover: 18,
+    minimumProjects: 4,
+    zkpRule: 'Min Exp ≥ 6 Yrs, Turnover ≥ ₹18 Cr, Projects ≥ 4 (Groth16)',
+    description: 'Supply of 150 low-floor 9-meter air-conditioned electric feeder buses.'
+  },
+  {
+    id: 'TN-HEALTH-2026-MED-005',
+    title: 'Supply, Installation, and Maintenance of Advanced Diagnostic MRI Systems',
+    department: 'Tamil Nadu Medical Services Corporation (TNMSC)',
     category: 'Healthcare Tech',
     tenderType: 'Open Tender',
     method: 'Quality & Cost Based Selection (QCBS)',
-    budget: 95000000,
-    pubDate: '08 Sep 2026',
-    closingDate: '15 Oct 2026',
-    status: 'Closing Soon',
-    bidsCount: 6,
-    zkpRule: 'Revenue ≥ ₹75,00,000 (Groth16 Range Proof)',
-    description: 'Unified electronic health record infrastructure and hospital resource monitoring system.'
-  },
-  {
-    id: 'TND-2026-2890',
-    title: 'Autonomous Solar Micro-Grid Installation Phase II',
-    department: 'Ministry of New & Renewable Energy',
-    category: 'Renewable Energy',
-    tenderType: 'E-Tender',
-    method: 'Competitive Bidding',
-    budget: 320000000,
-    pubDate: '10 Sep 2026',
-    closingDate: '20 Oct 2026',
+    budget: 650000000,
+    pubDate: '22 Oct 2026',
+    closingDate: '10 Dec 2026',
     status: 'Active',
     bidsCount: 4,
-    zkpRule: 'Revenue ≥ ₹2,00,00,000 (Groth16 Range Proof)',
-    description: 'Grid-interactive distributed rooftop solar micro-grid with battery energy storage.'
+    minimumExperience: 5,
+    minimumTurnover: 12,
+    minimumProjects: 3,
+    zkpRule: 'Min Exp ≥ 5 Yrs, Turnover ≥ ₹12 Cr, Projects ≥ 3 (Groth16)',
+    description: 'Procurement of 3.0 Tesla wide-bore clinical MRI systems for teaching hospitals.'
   },
   {
-    id: 'TND-2026-1044',
-    title: 'Automated Highway Tolling & AI Surveillance Infra',
-    department: 'National Highways Authority of India',
-    category: 'Transportation',
+    id: 'IN-ELCOT-2026-IT-009',
+    title: 'Establishment of Tier-IV High-Performance AI Data Center',
+    department: 'Electronics Corporation of Tamil Nadu (ELCOT)',
+    category: 'IT & Software',
     tenderType: 'Open Tender',
     method: 'Quality & Cost Based Selection (QCBS)',
-    budget: 120000000,
-    pubDate: '12 Sep 2026',
-    closingDate: '28 Oct 2026',
+    budget: 3200000000,
+    pubDate: '25 Oct 2026',
+    closingDate: '15 Dec 2026',
     status: 'Active',
-    bidsCount: 5,
-    zkpRule: 'Revenue ≥ ₹1,00,00,000 (Groth16 Range Proof)',
-    description: 'Multi-lane free-flow electronic toll collection and automated incident detection cameras.'
+    bidsCount: 6,
+    minimumExperience: 8,
+    minimumTurnover: 25,
+    minimumProjects: 6,
+    zkpRule: 'Min Exp ≥ 8 Yrs, Turnover ≥ ₹25 Cr, Projects ≥ 6 (Groth16)',
+    description: 'Design and construction of state AI supercomputing cluster and Tier-IV facility.'
   }
 ];
 
@@ -176,7 +194,7 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
         const data = await res.json();
         if (data.success && Array.isArray(data.tenders) && data.tenders.length > 0) {
           const formattedDbTenders = data.tenders.map(t => {
-            const rawClosingDate = t.submissionDeadline || t.closingDate || '30 Sep 2026';
+            const rawClosingDate = t.submissionDeadline || t.closingDate || '30 Nov 2026';
             const deadlinePassed = t.isDeadlineOver || isTenderDeadlineOver(rawClosingDate);
             return {
               id: t.tenderId,
@@ -191,31 +209,16 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
               rawClosingDate: rawClosingDate,
               status: deadlinePassed ? 'Closed' : (t.status === 'Draft' ? 'Draft' : (t.status || 'Active')),
               isDeadlineOver: deadlinePassed,
-              bidsCount: t.tenderId === 'TND-2026-6868' ? (t.bidsCount || 4) : (t.bidsCount || 0),
-              zkpRule: t.zkpRule || 'Revenue ≥ ₹1,00,00,000 (Groth16 Range Proof)',
+              bidsCount: t.bidsCount || 0,
+              minimumExperience: t.minimumExperience,
+              minimumTurnover: t.minimumTurnover,
+              minimumProjects: t.minimumProjects,
+              zkpRule: t.zkpRule || `Min Exp ≥ ${t.minimumExperience || 5} Yrs, Turnover ≥ ₹${t.minimumTurnover || 10} Cr, Projects ≥ ${t.minimumProjects || 3} (Groth16)`,
               description: t.executiveSummary || t.detailedScope || t.description || 'Public tender specification'
             };
           });
 
-          const existingIds = new Set(formattedDbTenders.map(t => t.id));
-          const merged = [...formattedDbTenders];
-          defaultActiveTenders.forEach(defT => {
-            if (!existingIds.has(defT.id)) {
-              const defDeadlinePassed = isTenderDeadlineOver(defT.closingDate);
-              merged.push({
-                ...defT,
-                status: defDeadlinePassed ? 'Closed' : defT.status,
-                isDeadlineOver: defDeadlinePassed
-              });
-            }
-          });
-          // Ensure TND-2026-6868 is always prioritized first
-          merged.sort((a, b) => {
-            if (a.id === 'TND-2026-6868') return -1;
-            if (b.id === 'TND-2026-6868') return 1;
-            return 0;
-          });
-          setTenders(merged);
+          setTenders(formattedDbTenders);
         } else {
           setTenders(defaultActiveTenders);
         }
@@ -454,7 +457,10 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
   };
 
   const filteredTenders = tenders.filter(t => {
-    const matchesStatus = statusFilter === 'ALL' || t.status === statusFilter;
+    const isOver = t.isDeadlineOver || isTenderDeadlineOver(t.closingDate);
+    const matchesStatus = statusFilter === 'ALL'
+      ? !isOver
+      : (statusFilter === 'Closed' ? isOver : (!isOver && t.status === statusFilter));
     const matchesSearch = !searchQuery || t.title.toLowerCase().includes(searchQuery.toLowerCase()) || t.id.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
@@ -826,20 +832,20 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
                     <h3 className="font-bold text-white text-sm">Recently Published Government Tenders</h3>
                     <span className="badge-active-tenders text-[11px] font-mono font-bold px-3 py-1 rounded-md border flex items-center space-x-1.5 shadow-sm">
                       <span className="w-2 h-2 rounded-full bg-teal-400 inline-block animate-pulse"></span>
-                      <span>{tenders.filter(t => !t.isDeadlineOver).length} Active Tenders</span>
+                      <span>{tenders.filter(t => !t.isDeadlineOver && !isTenderDeadlineOver(t.closingDate)).length} Active Tenders</span>
                     </span>
                   </div>
                   <div className="space-y-3">
-                    {tenders.slice(0, 8).map(t => (
-                      <div key={t.id} className={`p-4 bg-slate-950 rounded-xl border ${t.id === 'TND-2026-6868' ? 'border-teal-500/60 ring-1 ring-teal-500/30' : 'border-slate-800'} flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-md`}>
+                    {tenders.filter(t => !t.isDeadlineOver && !isTenderDeadlineOver(t.closingDate)).slice(0, 8).map(t => (
+                      <div key={t.id} className={`p-4 bg-slate-950 rounded-xl border ${t.id === 'TN-PWD-2026-INFRA-001' ? 'border-teal-500/60 ring-1 ring-teal-500/30' : 'border-slate-800'} flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-md`}>
                         <div className="space-y-1">
                           <div className="flex items-center space-x-2">
                             <span className="badge-tender-id font-mono font-bold text-xs px-2.5 py-0.5 rounded border border-teal-500/40 bg-teal-500/10">
                               {t.id}
                             </span>
-                            {t.id === 'TND-2026-6868' && (
+                            {t.id === 'TN-PWD-2026-INFRA-001' && (
                               <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] rounded font-mono font-bold uppercase tracking-wider">
-                                Primary Tender
+                                Flagship Tender
                               </span>
                             )}
                             <span className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[10px] rounded font-mono">{t.tenderType}</span>
@@ -966,7 +972,7 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
                         <div 
                           key={t.id} 
                           onClick={() => setSelectedTenderForEvaluation(t)}
-                          className={`p-4 bg-slate-950 rounded-xl border ${t.id === 'TND-2026-6868' ? 'border-teal-500/60 ring-1 ring-teal-500/30' : 'border-slate-800'} hover:border-teal-500/50 hover:bg-slate-900/60 transition cursor-pointer space-y-3 group shadow-md`}
+                          className={`p-4 bg-slate-950 rounded-xl border ${t.id === 'TN-PWD-2026-INFRA-001' ? 'border-teal-500/60 ring-1 ring-teal-500/30' : 'border-slate-800'} hover:border-teal-500/50 hover:bg-slate-900/60 transition cursor-pointer space-y-3 group shadow-md`}
                         >
                           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
                             <div>
@@ -974,9 +980,9 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
                                 <span className="badge-tender-id font-mono font-bold text-xs px-2.5 py-0.5 rounded border border-teal-500/40 bg-teal-500/10">
                                   {t.id}
                                 </span>
-                                {t.id === 'TND-2026-6868' && (
+                                {t.id === 'TN-PWD-2026-INFRA-001' && (
                                   <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] rounded font-mono font-bold uppercase tracking-wider">
-                                    Primary Tender
+                                    Flagship Tender
                                   </span>
                                 )}
                                 <span className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[10px] rounded font-mono">{t.tenderType}</span>

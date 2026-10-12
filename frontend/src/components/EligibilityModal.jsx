@@ -125,6 +125,25 @@ function buildW3cVcJson(vcObj, userDid, currentUser) {
   };
 }
 
+function getTenderDefaultReqs(tender) {
+  if (!tender) return { minimumExperience: 5, minimumTurnover: 10, minimumProjects: 3, policyHash: '' };
+  if (tender.minimumExperience !== undefined && tender.minimumTurnover !== undefined && tender.minimumProjects !== undefined) {
+    return {
+      minimumExperience: Number(tender.minimumExperience),
+      minimumTurnover: Number(tender.minimumTurnover),
+      minimumProjects: Number(tender.minimumProjects),
+      policyHash: ''
+    };
+  }
+  const b = Number(tender.estimatedValue || tender.budget || 50000000);
+  if (b >= 2000000000) return { minimumExperience: 8, minimumTurnover: 22, minimumProjects: 5, policyHash: '' };
+  if (b >= 1000000000) return { minimumExperience: 7, minimumTurnover: 18, minimumProjects: 4, policyHash: '' };
+  if (b >= 400000000) return { minimumExperience: 6, minimumTurnover: 14, minimumProjects: 4, policyHash: '' };
+  if (b >= 200000000) return { minimumExperience: 5, minimumTurnover: 8, minimumProjects: 3, policyHash: '' };
+  if (b >= 50000000) return { minimumExperience: 4, minimumTurnover: 5, minimumProjects: 3, policyHash: '' };
+  return { minimumExperience: 2, minimumTurnover: 1.5, minimumProjects: 2, policyHash: '' };
+}
+
 export default function EligibilityModal({
   isOpen,
   onClose,
@@ -136,12 +155,7 @@ export default function EligibilityModal({
   onToast
 }) {
   const [loadingReqs, setLoadingReqs] = useState(true);
-  const [requirements, setRequirements] = useState({
-    minimumExperience: 5,
-    minimumTurnover: 10,
-    minimumProjects: 3,
-    policyHash: ''
-  });
+  const [requirements, setRequirements] = useState(() => getTenderDefaultReqs(tender));
 
   // Active Verifiable Credential (VC) State (Automatically sourced from Vendor Dashboard)
   const [activeVc, setActiveVc] = useState(null);
@@ -221,21 +235,11 @@ export default function EligibilityModal({
         if (data.success && data.eligibilityCriteria && isMounted) {
           setRequirements(data.eligibilityCriteria);
         } else if (isMounted) {
-          setRequirements({
-            minimumExperience: tender?.minimumExperience ?? 5,
-            minimumTurnover: tender?.minimumTurnover ?? 10,
-            minimumProjects: tender?.minimumProjects ?? 3,
-            policyHash: ''
-          });
+          setRequirements(getTenderDefaultReqs(tender));
         }
       } catch (err) {
         if (isMounted) {
-          setRequirements({
-            minimumExperience: tender?.minimumExperience ?? 5,
-            minimumTurnover: tender?.minimumTurnover ?? 10,
-            minimumProjects: tender?.minimumProjects ?? 3,
-            policyHash: ''
-          });
+          setRequirements(getTenderDefaultReqs(tender));
         }
       }
 

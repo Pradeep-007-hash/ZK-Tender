@@ -124,9 +124,14 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
         const res = await fetch('http://localhost:5000/api/tenders?includeDrafts=false');
         const data = await res.json();
         if (data.success && Array.isArray(data.tenders)) {
-          // Filter out any Draft tenders - Vendors can only view Tenders created & published on-chain with gas payment
-          const publishedOnly = data.tenders.filter(t => (t.status || '').toUpperCase() !== 'DRAFT');
-          const formatted = publishedOnly.map(t => {
+          // Filter out Draft tenders and remove all tenders whose deadline is already over
+          const activeOnly = data.tenders.filter(t => {
+            const isDraft = (t.status || '').toUpperCase() === 'DRAFT';
+            const isOver = isTenderDeadlineOver(t);
+            return !isDraft && !isOver;
+          });
+
+          const formatted = activeOnly.map(t => {
             const isOver = isTenderDeadlineOver(t);
             const pubDateStr = t.pubDate
               ? (new Date(t.pubDate).toString() !== 'Invalid Date'
@@ -154,17 +159,19 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               eligibility: 'ELIGIBLE',
               isDeadlineOver: isOver,
               status: isOver ? 'CLOSED' : (t.status || 'PUBLISHED').toUpperCase(),
+              minimumExperience: t.minimumExperience,
+              minimumTurnover: t.minimumTurnover,
+              minimumProjects: t.minimumProjects,
               description: t.executiveSummary || t.detailedScope || t.description || t.title,
               txHash: t.txHash || null,
-              zkpRule: t.zkpRule || 'Revenue & Technical Range Proof (Groth16)',
+              zkpRule: t.zkpRule || `Min Exp ≥ ${t.minimumExperience || 5} Yrs, Turnover ≥ ₹${t.minimumTurnover || 10} Cr, Projects ≥ ${t.minimumProjects || 3} (Groth16)`,
               evaluationCriteriaList: t.evaluationCriteriaList || t.evaluationCriteria?.weights || [],
               eligibilityRequirementsList: t.eligibilityRequirementsList || t.vendorEligibilityCriteria || []
             };
           });
           setTenders(formatted);
           if (formatted.length > 0) {
-            const firstAvailable = formatted.find(t => !t.isDeadlineOver) || formatted[0];
-            setSelectedTender(firstAvailable);
+            setSelectedTender(formatted[0]);
           }
         }
       } catch (err) {

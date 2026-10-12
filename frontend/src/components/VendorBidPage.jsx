@@ -118,11 +118,21 @@ export default function VendorBidPage({
         if (elData.success && elData.eligibilityCriteria && isMounted) {
           setTenderRequirements(elData.eligibilityCriteria);
         } else if (isMounted) {
+          const b = Number(targetTender?.estimatedValue || targetTender?.budget || 50000000);
+          const dynamicReqs = targetTender?.minimumExperience !== undefined ? {
+            minimumExperience: Number(targetTender.minimumExperience),
+            minimumTurnover: Number(targetTender.minimumTurnover),
+            minimumProjects: Number(targetTender.minimumProjects)
+          } : (b >= 2000000000 ? { minimumExperience: 8, minimumTurnover: 22, minimumProjects: 5 }
+            : b >= 1000000000 ? { minimumExperience: 7, minimumTurnover: 18, minimumProjects: 4 }
+            : b >= 400000000 ? { minimumExperience: 6, minimumTurnover: 14, minimumProjects: 4 }
+            : b >= 200000000 ? { minimumExperience: 5, minimumTurnover: 8, minimumProjects: 3 }
+            : b >= 50000000 ? { minimumExperience: 4, minimumTurnover: 5, minimumProjects: 3 }
+            : { minimumExperience: 2, minimumTurnover: 1.5, minimumProjects: 2 });
+
           setTenderRequirements({
             tenderId,
-            minimumExperience: targetTender?.minimumExperience ?? 5,
-            minimumTurnover: targetTender?.minimumTurnover ?? 10,
-            minimumProjects: targetTender?.minimumProjects ?? 3,
+            ...dynamicReqs,
             policyHash: targetTender?.policyHash || '0x035494a8bfaa0ee85f6f91c3a22a12a024b48a36a9d0d434b516ee7021f2c8fb'
           });
         }
@@ -143,11 +153,21 @@ export default function VendorBidPage({
       } catch (err) {
         console.warn('[FETCH TENDER REQUIREMENTS NOTICE]', err.message);
         if (isMounted) {
+          const b = Number(targetTender?.estimatedValue || targetTender?.budget || 50000000);
+          const dynamicReqs = targetTender?.minimumExperience !== undefined ? {
+            minimumExperience: Number(targetTender.minimumExperience),
+            minimumTurnover: Number(targetTender.minimumTurnover),
+            minimumProjects: Number(targetTender.minimumProjects)
+          } : (b >= 2000000000 ? { minimumExperience: 8, minimumTurnover: 22, minimumProjects: 5 }
+            : b >= 1000000000 ? { minimumExperience: 7, minimumTurnover: 18, minimumProjects: 4 }
+            : b >= 400000000 ? { minimumExperience: 6, minimumTurnover: 14, minimumProjects: 4 }
+            : b >= 200000000 ? { minimumExperience: 5, minimumTurnover: 8, minimumProjects: 3 }
+            : b >= 50000000 ? { minimumExperience: 4, minimumTurnover: 5, minimumProjects: 3 }
+            : { minimumExperience: 2, minimumTurnover: 1.5, minimumProjects: 2 });
+
           setTenderRequirements({
             tenderId,
-            minimumExperience: 5,
-            minimumTurnover: 10,
-            minimumProjects: 3,
+            ...dynamicReqs,
             policyHash: '0x035494a8bfaa0ee85f6f91c3a22a12a024b48a36a9d0d434b516ee7021f2c8fb'
           });
           setEvaluationPolicy({

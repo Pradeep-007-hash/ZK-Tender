@@ -789,6 +789,37 @@ async function seedTenders() {
     await mongoose.connect(mongoUri);
     console.log("✅ Connected to MongoDB Atlas for Tender Ingestion...");
 
+    // 1. Clean up and purge all deadline-overed and expired test tenders from MongoDB
+    const now = Date.now();
+    const existingTenders = await Tender.find({});
+    let removedCount = 0;
+    for (const t of existingTenders) {
+      const rawDate = t.submissionDeadline || t.closingDate || t.bidDeadline;
+      const parsedTime = rawDate ? new Date(rawDate).getTime() : 0;
+      const isPast = (parsedTime > 0 && parsedTime < now);
+      const isLegacyTest = ['TND-2026-6868', 'TND-2026-5778', 'TND-SEPOLIA-4897', 'TND-2026-3840', 'TND-2026-9503', 'TND-2026-4383'].includes(t.tenderId);
+      if (isPast || isLegacyTest || !rawDate) {
+        await Tender.deleteOne({ _id: t._id });
+        removedCount++;
+        console.log(`🗑️ Removed expired tender from DB: ${t.tenderId} (Deadline: ${rawDate || 'None'})`);
+      }
+    }
+    console.log(`🧹 Removed ${removedCount} deadline-overed tenders from MongoDB.`);
+
+    // 2. Distinct Public Tender Requirements Map (Different for every single tender)
+    const tenderEligibilityMap = {
+      "TN-PWD-2026-INFRA-001":  { minimumExperience: 7, minimumTurnover: 15,  minimumProjects: 4 }, // Highway: Exp ≥ 7 Yrs, Turn ≥ ₹15 Cr, Proj ≥ 4
+      "TN-DICT-2026-IT-002":    { minimumExperience: 4, minimumTurnover: 5,   minimumProjects: 3 }, // Identity: Exp ≥ 4 Yrs, Turn ≥ ₹5 Cr, Proj ≥ 3
+      "IN-TNEB-2026-PWR-003":   { minimumExperience: 8, minimumTurnover: 22,  minimumProjects: 5 }, // Solar 50MW: Exp ≥ 8 Yrs, Turn ≥ ₹22 Cr, Proj ≥ 5
+      "IN-CMRL-2026-TRN-004":   { minimumExperience: 6, minimumTurnover: 18,  minimumProjects: 4 }, // Electric Bus: Exp ≥ 6 Yrs, Turn ≥ ₹18 Cr, Proj ≥ 4
+      "TN-HEALTH-2026-MED-005": { minimumExperience: 5, minimumTurnover: 12,  minimumProjects: 3 }, // MRI Systems: Exp ≥ 5 Yrs, Turn ≥ ₹12 Cr, Proj ≥ 3
+      "TN-SMART-2026-CNS-006":  { minimumExperience: 3, minimumTurnover: 2,   minimumProjects: 2 }, // Mobility Plan: Exp ≥ 3 Yrs, Turn ≥ ₹2 Cr, Proj ≥ 2
+      "IN-TWAD-2026-CON-007":   { minimumExperience: 6, minimumTurnover: 14,  minimumProjects: 3 }, // Sewage STP: Exp ≥ 6 Yrs, Turn ≥ ₹14 Cr, Proj ≥ 3
+      "TN-AGRIC-2026-OTH-008":  { minimumExperience: 2, minimumTurnover: 1.5, minimumProjects: 2 }, // Agri Drones: Exp ≥ 2 Yrs, Turn ≥ ₹1.5 Cr, Proj ≥ 2
+      "IN-ELCOT-2026-IT-009":   { minimumExperience: 8, minimumTurnover: 25,  minimumProjects: 6 }, // AI Data Center: Exp ≥ 8 Yrs, Turn ≥ ₹25 Cr, Proj ≥ 6
+      "IN-TNCLEAN-2026-INF-010": { minimumExperience: 5, minimumTurnover: 8,   minimumProjects: 3 }  // Bio-Methanation: Exp ≥ 5 Yrs, Turn ≥ ₹8 Cr, Proj ≥ 3
+    };
+
     let insertedCount = 0;
     let updatedCount = 0;
 
@@ -812,6 +843,8 @@ async function seedTenders() {
         finEvalEndDate: stripIsoTime(item.timeline.finEvalEndDate),
         expectedAwardDate: stripIsoTime(item.timeline.expectedAwardDate),
       } : {};
+
+      const reqs = tenderEligibilityMap[tenderId] || { minimumExperience: 5, minimumTurnover: 10, minimumProjects: 3 };
 
       const doc = {
         tenderId,
@@ -856,6 +889,14 @@ async function seedTenders() {
         finEvalStartDate: stripIsoTime(item.timeline?.finEvalStartDate),
         finEvalEndDate: stripIsoTime(item.timeline?.finEvalEndDate),
         awardDate: stripIsoTime(item.timeline?.expectedAwardDate),
+        minimumExperience: reqs.minimumExperience,
+        minimumTurnover: reqs.minimumTurnover,
+        minimumProjects: reqs.minimumProjects,
+        eligibilityCriteria: {
+          minimumExperience: reqs.minimumExperience,
+          minimumTurnover: reqs.minimumTurnover,
+          minimumProjects: reqs.minimumProjects
+        },
         eligibilityRequirementsList: item.vendorEligibilityCriteria || [],
         requiredDocsList: item.requiredDocumentsChecklist || [],
         submissionType: item.bidConfig?.bidSubmissionType || "Two Stage / Two Cover",
@@ -868,7 +909,7 @@ async function seedTenders() {
         evaluationCriteriaList: item.evaluationCriteria?.weights || [],
         totalWeight: 100,
         zkpActive: true,
-        zkpRule: item.zkpRule || "Revenue & Technical Eligibility Proof (Groth16)",
+        zkpRule: `Min Exp ≥ ${reqs.minimumExperience} Yrs, Turnover ≥ ₹${reqs.minimumTurnover} Cr, Projects ≥ ${reqs.minimumProjects} (Groth16 Range Proof)`,
         status: "Published",
         bidsCount: 0,
         txHash: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),

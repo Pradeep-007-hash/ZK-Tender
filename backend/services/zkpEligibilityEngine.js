@@ -28,7 +28,7 @@ function getTenderEligibilityCriteria(tender) {
     };
   }
 
-  const tenderId = tender.tenderId || tender.id || "T001";
+  const tenderId = String(tender.tenderId || tender.id || "T001").trim();
   
   // Look for existing values or list definitions
   let minExp = tender.minimumExperience;
@@ -43,10 +43,51 @@ function getTenderEligibilityCriteria(tender) {
     }
   }
 
-  // Fallbacks based on tender details or prompt defaults
-  minExp = Number(minExp ?? 5);
-  minTurn = Number(minTurn ?? 10);
-  minProj = Number(minProj ?? 3);
+  // Dynamic derivation based on tender budget and ID variance if not explicitly stored
+  if (minExp === undefined || minTurn === undefined || minProj === undefined) {
+    const budget = Number(tender.estimatedValue || tender.budget || 50000000);
+    
+    // Tiered benchmarks based on project scale (Budget in INR)
+    if (budget >= 2000000000) {        // ≥ ₹200 Cr (Mega Infrastructure / AI Data Center)
+      minExp = minExp ?? 8;
+      minTurn = minTurn ?? 22;
+      minProj = minProj ?? 5;
+    } else if (budget >= 1000000000) { // ≥ ₹100 Cr (Large Transport / Metro Fleet)
+      minExp = minExp ?? 7;
+      minTurn = minTurn ?? 18;
+      minProj = minProj ?? 4;
+    } else if (budget >= 400000000) {  // ≥ ₹40 Cr (Highway / Diagnostic MRI / Sewage)
+      minExp = minExp ?? 6;
+      minTurn = minTurn ?? 14;
+      minProj = minProj ?? 4;
+    } else if (budget >= 200000000) {  // ≥ ₹20 Cr (Clean Energy / Bio-Methanation)
+      minExp = minExp ?? 5;
+      minTurn = minTurn ?? 8;
+      minProj = minProj ?? 3;
+    } else if (budget >= 50000000) {   // ≥ ₹5 Cr (Identity Portal / Urban Tech)
+      minExp = minExp ?? 4;
+      minTurn = minTurn ?? 4.5;
+      minProj = minProj ?? 3;
+    } else {                            // < ₹5 Cr (Smart City Consultancy / Agritech Drones)
+      minExp = minExp ?? 2;
+      minTurn = minTurn ?? 1.5;
+      minProj = minProj ?? 2;
+    }
+
+    // Add deterministic pseudo-variance based on tenderId char codes so tenders don't collide
+    let idHash = 0;
+    for (let i = 0; i < tenderId.length; i++) {
+      idHash = (idHash + tenderId.charCodeAt(i)) % 7;
+    }
+    if (idHash === 1 && minExp > 3) minExp = Math.max(3, minExp - 1);
+    if (idHash === 2) minProj = Math.max(2, minProj + 1);
+    if (idHash === 3 && minTurn > 3) minTurn = Math.round((minTurn * 1.1) * 10) / 10;
+    if (idHash === 4 && minTurn > 2) minTurn = Math.round((minTurn * 0.9) * 10) / 10;
+  }
+
+  minExp = Number(minExp);
+  minTurn = Number(minTurn);
+  minProj = Number(minProj);
 
   const policyHash = generateEligibilityPolicyHash(tenderId, minExp, minTurn, minProj);
 
