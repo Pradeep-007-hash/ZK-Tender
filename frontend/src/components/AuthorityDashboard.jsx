@@ -214,7 +214,7 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
             if (b.id === 'TND-2026-6868') return 1;
             return 0;
           });
-          setTenders(merged.slice(0, 6));
+          setTenders(merged);
         } else {
           setTenders(defaultActiveTenders);
         }
@@ -825,11 +825,11 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
                     <h3 className="font-bold text-white text-sm">Recently Published Government Tenders</h3>
                     <span className="badge-active-tenders text-[11px] font-mono font-bold px-3 py-1 rounded-md border flex items-center space-x-1.5 shadow-sm">
                       <span className="w-2 h-2 rounded-full bg-teal-400 inline-block animate-pulse"></span>
-                      <span>6 Active Tenders</span>
+                      <span>{tenders.filter(t => !t.isDeadlineOver).length} Active Tenders</span>
                     </span>
                   </div>
                   <div className="space-y-3">
-                    {tenders.map(t => (
+                    {tenders.slice(0, 8).map(t => (
                       <div key={t.id} className={`p-4 bg-slate-950 rounded-xl border ${t.id === 'TND-2026-6868' ? 'border-teal-500/60 ring-1 ring-teal-500/30' : 'border-slate-800'} flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-md`}>
                         <div className="space-y-1">
                           <div className="flex items-center space-x-2">
@@ -956,7 +956,7 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
                       </div>
                       <span className="badge-active-tenders text-[11px] font-mono px-3 py-1 rounded-md border flex items-center space-x-1.5 font-bold shadow-sm">
                         <span className="w-2 h-2 rounded-full bg-teal-400 inline-block animate-pulse"></span>
-                        <span>{filteredTenders.length || 6} Active Tenders</span>
+                        <span>{filteredTenders.length} Tenders</span>
                       </span>
                     </div>
                     

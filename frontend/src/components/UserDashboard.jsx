@@ -128,23 +128,36 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
           const publishedOnly = data.tenders.filter(t => (t.status || '').toUpperCase() !== 'DRAFT');
           const formatted = publishedOnly.map(t => {
             const isOver = isTenderDeadlineOver(t);
+            const pubDateStr = t.pubDate
+              ? (new Date(t.pubDate).toString() !== 'Invalid Date'
+                  ? new Date(t.pubDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                  : String(t.pubDate))
+              : 'Today';
+
             return {
+              ...t,
               id: t.tenderId || `TND-${Math.floor(1000 + Math.random() * 9000)}`,
-              title: t.title || 'Untitled Tender',
+              tenderId: t.tenderId || t.id,
+              title: t.title || t.tenderTitle || 'Untitled Tender',
               organization: t.department || 'Dept of Urban Tech',
+              department: t.department || 'Dept of Urban Tech',
               category: t.category || 'Infrastructure',
-              tenderType: t.tenderType || 'E-Tender',
-              location: t.city ? `${t.city}, ${t.state}` : (t.state || 'Maharashtra, India'),
-              pubDate: t.pubDate ? new Date(t.pubDate).toLocaleDateString('en-IN') : 'Today',
-              closingDate: t.submissionDeadline || t.closingDate || '30 Sep 2026',
+              tenderType: t.tenderType || 'Open Tender',
+              location: t.city ? `${t.city}, ${t.state}` : (t.state || 'Tamil Nadu, India'),
+              pubDate: pubDateStr,
+              closingDate: t.submissionDeadline || t.closingDate || '30 Nov 2026',
               rawClosingDate: t.submissionDeadline || t.closingDate || t.bidDeadline,
               budget: Number(t.estimatedValue || t.budget || 0),
               method: t.procurementMethod || t.method || 'Competitive Bidding',
+              procurementMethod: t.procurementMethod || t.method || 'Competitive Bidding',
               eligibility: 'ELIGIBLE',
               isDeadlineOver: isOver,
               status: isOver ? 'CLOSED' : (t.status || 'PUBLISHED').toUpperCase(),
               description: t.executiveSummary || t.detailedScope || t.description || t.title,
-              txHash: t.txHash || null
+              txHash: t.txHash || null,
+              zkpRule: t.zkpRule || 'Revenue & Technical Range Proof (Groth16)',
+              evaluationCriteriaList: t.evaluationCriteriaList || t.evaluationCriteria?.weights || [],
+              eligibilityRequirementsList: t.eligibilityRequirementsList || t.vendorEligibilityCriteria || []
             };
           });
           setTenders(formatted);
@@ -1913,10 +1926,9 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                       <label className="block font-medium text-slate-400 mb-1">Organization</label>
                       <select value={filterOrg} onChange={(e) => setFilterOrg(e.target.value)} className="w-full p-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:border-teal-500">
                         <option value="ALL">All Organizations</option>
-                        <option value="Dept of Urban Tech">Dept of Urban Tech</option>
-                        <option value="Ministry of Electronics">Ministry of Electronics</option>
-                        <option value="National Cyber Agency">National Cyber Agency</option>
-                        <option value="Dept of Energy">Dept of Energy</option>
+                        {Array.from(new Set(tenders.map(t => t.organization).filter(Boolean))).map(org => (
+                          <option key={org} value={org}>{org}</option>
+                        ))}
                       </select>
                     </div>
 
@@ -2182,38 +2194,70 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                         {/* Evaluation Criteria Progress Bar */}
                         <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
-                          <h3 className="font-bold text-white text-sm flex items-center space-x-2">
-                            <i className="fa-solid fa-chart-pie text-teal-400"></i>
-                            <span>Evaluation Criteria Breakdown</span>
-                          </h3>
-                          <div className="space-y-2 font-mono text-[11px]">
-                            <div>
-                              <div className="flex justify-between mb-1"><span>Technical Capability (40%)</span><span className="text-teal-400 font-bold">40 Points</span></div>
-                              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden"><div className="bg-teal-500 h-1.5 w-[40%] rounded-full"></div></div>
-                            </div>
-                            <div>
-                              <div className="flex justify-between mb-1"><span>Financial Soundness & Turnover (30%)</span><span className="text-teal-400 font-bold">30 Points</span></div>
-                              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden"><div className="bg-indigo-500 h-1.5 w-[30%] rounded-full"></div></div>
-                            </div>
-                            <div>
-                              <div className="flex justify-between mb-1"><span>Past Execution Experience (20%)</span><span className="text-teal-400 font-bold">20 Points</span></div>
-                              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden"><div className="bg-amber-500 h-1.5 w-[20%] rounded-full"></div></div>
-                            </div>
-                            <div>
-                              <div className="flex justify-between mb-1"><span>Green Power PPA & Compliance (10%)</span><span className="text-teal-400 font-bold">10 Points</span></div>
-                              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden"><div className="bg-emerald-500 h-1.5 w-[10%] rounded-full"></div></div>
-                            </div>
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-white text-sm flex items-center space-x-2">
+                              <i className="fa-solid fa-chart-pie text-teal-400"></i>
+                              <span>Evaluation Criteria Breakdown</span>
+                            </h3>
+                            <span className="text-[10px] font-mono text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20 font-bold">
+                              Method: {activeTender.evaluationMethod || activeTender.method || 'QCBS'}
+                            </span>
+                          </div>
+                          <div className="space-y-2.5 font-mono text-[11px]">
+                            {((activeTender.evaluationCriteriaList && activeTender.evaluationCriteriaList.length > 0)
+                              ? activeTender.evaluationCriteriaList
+                              : [
+                                  { criterionName: 'Technical Qualification & Past Experience', weightPercentage: 40 },
+                                  { criterionName: 'Financial Commercial Offer', weightPercentage: 40 },
+                                  { criterionName: 'Methodology & Deployment Schedule', weightPercentage: 20 }
+                                ]
+                            ).map((c, i) => {
+                              const weight = c.weightPercentage || c.weight || 25;
+                              const colors = ['bg-teal-500', 'bg-indigo-500', 'bg-amber-500', 'bg-emerald-500', 'bg-rose-500'];
+                              const barColor = colors[i % colors.length];
+                              return (
+                                <div key={i}>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="text-slate-300">{c.criterionName || c.name} ({weight}%)</span>
+                                    <span className="text-teal-400 font-bold">{weight} Points</span>
+                                  </div>
+                                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                    <div className={`${barColor} h-1.5 rounded-full`} style={{ width: `${weight}%` }}></div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>
 
                       <div className="space-y-4">
                         <div className="p-4 bg-slate-950/60 rounded-xl border border-slate-800 space-y-3 font-mono text-xs">
-                          <h4 className="font-bold text-white text-xs">ZKP Eligibility Gateways</h4>
+                          <h4 className="font-bold text-white text-xs flex items-center space-x-1.5">
+                            <i className="fa-solid fa-shield-halved text-teal-400"></i>
+                            <span>ZKP Eligibility Gateways</span>
+                          </h4>
                           <ul className="space-y-2 text-[11px] text-slate-300">
-                            <li className="flex items-center space-x-2 text-teal-400"><i className="fa-solid fa-shield-check text-xs"></i><span>Annual Turnover &ge; ₹50 Cr</span></li>
-                            <li className="flex items-center space-x-2 text-teal-400"><i className="fa-solid fa-shield-check text-xs"></i><span>Positive Net Worth &ge; ₹15 Cr</span></li>
-                            <li className="flex items-center space-x-2 text-teal-400"><i className="fa-solid fa-shield-check text-xs"></i><span>ISO 27001 Cybersecurity</span></li>
+                            {((activeTender.eligibilityRequirementsList && activeTender.eligibilityRequirementsList.length > 0)
+                              ? activeTender.eligibilityRequirementsList
+                              : [
+                                  { criterion: 'Financial Turnover', requirement: 'Annual Turnover ≥ ₹15 Cr (ZK-Proof)', verificationType: 'Groth16 Range Proof' },
+                                  { criterion: 'Experience Gate', requirement: 'Prior Project Completion Credentials', verificationType: 'Authority Attestation' }
+                                ]
+                            ).map((req, i) => (
+                              <li key={i} className="p-2.5 bg-slate-900 rounded-lg border border-slate-800/80 space-y-1">
+                                <div className="flex items-center space-x-1.5 text-teal-300 font-bold">
+                                  <i className="fa-solid fa-shield-check text-xs text-teal-400"></i>
+                                  <span>{req.criterion || 'Eligibility Gate'}</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 pl-4">{req.requirement}</p>
+                                {req.verificationType && (
+                                  <span className="inline-block ml-4 text-[9px] px-2 py-0.5 bg-teal-500/10 text-teal-400 rounded border border-teal-500/20 font-mono">
+                                    {req.verificationType}
+                                  </span>
+                                )}
+                              </li>
+                            ))}
                           </ul>
                         </div>
                       </div>
