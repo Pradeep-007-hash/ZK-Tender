@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import WalletConnectButton from './WalletConnectButton';
 import VendorBidPage from './VendorBidPage';
 import EligibilityModal from './EligibilityModal';
@@ -7,6 +7,7 @@ import VendorDocumentSubmission from './VendorDocumentSubmission';
 import VendorBidStatusPage from './vendor/VendorBidStatusPage';
 import VendorEvaluationResultsPage from './vendor/VendorEvaluationResultsPage';
 import { useWallet } from '../hooks/useWallet';
+import { isTenderDeadlineOver, parseDeadlineDate, getTenderTimeRemaining } from '../utils/tenderDateUtils';
 
 const indianStatesAndDistricts = {
   "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Kakinada", "Tirupati", "Anantapur", "Other"],
@@ -52,6 +53,8 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
     if (path.includes('evaluation') || path.includes('eval-result') || path.includes('scorecard')) return 'eval-results';
     if (path.includes('bid')) return 'bidding-my-bids';
     if (path.includes('zkp')) return 'zkp-generate';
+    if (path.includes('closed') || path.includes('past')) return 'tenders-closed';
+    if (path.includes('tender') || path.includes('available')) return 'tenders-available';
     return localStorage.getItem('zk_active_tab') || 'dashboard';
   });
 
@@ -90,7 +93,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                 ? '/vendor/evaluation-results'
                 : activeTab === 'bidding-my-bids'
                   ? '/vendor/bids'
-                  : '/vendor/dashboard';
+                  : activeTab === 'tenders-closed'
+                    ? '/vendor/closed-tenders'
+                    : activeTab === 'tenders-available'
+                      ? '/vendor/tenders'
+                      : '/vendor/dashboard';
     if (window.location.pathname !== targetUrl) {
       window.history.replaceState(null, '', targetUrl);
     }
@@ -103,6 +110,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
   // Data State - Loaded live from MongoDB Database
   const [tenders, setTenders] = useState([]);
+  const [tendersViewMode, setTendersViewMode] = useState('available'); // 'available' | 'closed'
   const [myBids, setMyBids] = useState([]);
   const [myBidsFilter, setMyBidsFilter] = useState('ALL');
   const [selectedTender, setSelectedTender] = useState(null);
@@ -118,24 +126,31 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
         if (data.success && Array.isArray(data.tenders)) {
           // Filter out any Draft tenders - Vendors can only view Tenders created & published on-chain with gas payment
           const publishedOnly = data.tenders.filter(t => (t.status || '').toUpperCase() !== 'DRAFT');
-          const formatted = publishedOnly.map(t => ({
-            id: t.tenderId || `TND-${Math.floor(1000 + Math.random() * 9000)}`,
-            title: t.title || 'Untitled Tender',
-            organization: t.department || 'Dept of Urban Tech',
-            category: t.category || 'Infrastructure',
-            location: t.city ? `${t.city}, ${t.state}` : (t.state || 'Maharashtra, India'),
-            pubDate: t.pubDate ? new Date(t.pubDate).toLocaleDateString('en-IN') : 'Today',
-            closingDate: t.submissionDeadline || t.closingDate || '30 Sep 2026',
-            budget: Number(t.estimatedValue || t.budget || 0),
-            method: t.procurementMethod || t.method || 'Competitive Bidding',
-            eligibility: 'ELIGIBLE',
-            status: (t.status || 'PUBLISHED').toUpperCase(),
-            description: t.executiveSummary || t.detailedScope || t.description || t.title,
-            txHash: t.txHash || null
-          }));
+          const formatted = publishedOnly.map(t => {
+            const isOver = isTenderDeadlineOver(t);
+            return {
+              id: t.tenderId || `TND-${Math.floor(1000 + Math.random() * 9000)}`,
+              title: t.title || 'Untitled Tender',
+              organization: t.department || 'Dept of Urban Tech',
+              category: t.category || 'Infrastructure',
+              tenderType: t.tenderType || 'E-Tender',
+              location: t.city ? `${t.city}, ${t.state}` : (t.state || 'Maharashtra, India'),
+              pubDate: t.pubDate ? new Date(t.pubDate).toLocaleDateString('en-IN') : 'Today',
+              closingDate: t.submissionDeadline || t.closingDate || '30 Sep 2026',
+              rawClosingDate: t.submissionDeadline || t.closingDate || t.bidDeadline,
+              budget: Number(t.estimatedValue || t.budget || 0),
+              method: t.procurementMethod || t.method || 'Competitive Bidding',
+              eligibility: 'ELIGIBLE',
+              isDeadlineOver: isOver,
+              status: isOver ? 'CLOSED' : (t.status || 'PUBLISHED').toUpperCase(),
+              description: t.executiveSummary || t.detailedScope || t.description || t.title,
+              txHash: t.txHash || null
+            };
+          });
           setTenders(formatted);
           if (formatted.length > 0) {
-            setSelectedTender(formatted[0]);
+            const firstAvailable = formatted.find(t => !t.isDeadlineOver) || formatted[0];
+            setSelectedTender(firstAvailable);
           }
         }
       } catch (err) {
@@ -881,6 +896,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
     'company-profile': 'Vendor Organization & Account Profile',
     'profile': 'Vendor Organization & Account Profile',
     'tenders-available': 'Available Tenders Directory',
+    'tenders-closed': 'Closed & Expired Tenders Archive',
     'tenders-applied': 'Applied Tenders',
     'tender-details': 'Tender Specification & Requirements',
     'bidding-submit': 'Electronic Bid Submission Wizard',
@@ -906,6 +922,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
   // Switch Tab Handler
   const handleSwitchTab = (tabId, extraData = null) => {
+    if (tabId === 'tenders-closed') {
+      setTendersViewMode('closed');
+    } else if (tabId === 'tenders-available') {
+      setTendersViewMode('available');
+    }
     if (extraData) {
       if (tabId === 'eval-results') {
         setSelectedEvalTenderId(typeof extraData === 'string' ? extraData : extraData?.tenderId || extraData?.id);
@@ -920,8 +941,17 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
     setNotifFlyoutOpen(false);
   };
 
-  // Filter Tenders
-  const filteredTenders = tenders.filter(t => {
+  // Distinct sets for Available (Active & Open) vs Closed (Deadline Concluded)
+  const availableTenders = useMemo(() => tenders.filter(t => !isTenderDeadlineOver(t)), [tenders]);
+  const closedTenders = useMemo(() => tenders.filter(t => isTenderDeadlineOver(t)), [tenders]);
+
+  // Target list depending on selected view mode (Available Tenders only displays active unexpired tenders)
+  const targetTenderList = (activeTab === 'tenders-closed' || tendersViewMode === 'closed')
+    ? closedTenders
+    : availableTenders;
+
+  // Filter Tenders (Separating Available Tenders from Closed Tenders)
+  const filteredTenders = targetTenderList.filter(t => {
     const matchCat = filterCat === 'ALL' || t.category === filterCat || (filterCat === 'IT & Software' && t.category === 'IT') || (filterCat === 'Infrastructure' && t.category === 'Infrastructure');
     const matchBudget = t.budget >= filterBudget;
     const matchOrg = filterOrg === 'ALL' || t.organization === filterOrg;
@@ -954,8 +984,14 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
   };
 
   const handleApplyTender = (tender) => {
-    const target = tender || selectedTender || tenders[0];
+    const target = tender || selectedTender || availableTenders[0] || tenders[0];
     const tId = target?.id || target?.tenderId || 'T001';
+
+    // BLOCK APPLICATIONS FOR EXPIRED TENDERS
+    if (isTenderDeadlineOver(target)) {
+      triggerToast(`Bidding Closed: The submission deadline for Tender ${tId} (${target?.closingDate}) has concluded. No further bids can be accepted.`, 'error');
+      return;
+    }
 
     // ENFORCE SINGLE APPLICATION RULE: Each vendor can only apply once per tender
     const isAlreadyApplied = myBids.some(b => b.tenderId === tId);
@@ -1088,14 +1124,39 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                 {!sidebarCollapsed && <div className="px-3 pb-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Tenders</div>}
                 <div className="space-y-0.5">
                   <button
-                    onClick={() => handleSwitchTab('tenders-available')}
-                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${activeTab === 'tenders-available' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
+                    onClick={() => {
+                      setTendersViewMode('available');
+                      handleSwitchTab('tenders-available');
+                    }}
+                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${(activeTab === 'tenders-available' && tendersViewMode === 'available') ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
                   >
                     <div className="flex items-center space-x-2.5">
                       <i className="fa-solid fa-list-check w-4 text-center shrink-0"></i>
                       {!sidebarCollapsed && <span>Available Tenders</span>}
                     </div>
-                    {!sidebarCollapsed && <span className="bg-teal-500/20 text-teal-300 font-mono text-[9px] px-1.5 py-0.5 rounded-full font-bold">6 Live</span>}
+                    {!sidebarCollapsed && (
+                      <span className="bg-teal-500/20 text-teal-300 font-mono text-[9px] px-1.5 py-0.5 rounded-full font-bold">
+                        {availableTenders.length} Live
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setTendersViewMode('closed');
+                      handleSwitchTab('tenders-closed');
+                    }}
+                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 rounded-lg transition-all ${(activeTab === 'tenders-closed' || (activeTab === 'tenders-available' && tendersViewMode === 'closed')) ? 'bg-slate-800 text-slate-100 font-semibold border border-slate-700/80 shadow-sm' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
+                  >
+                    <div className="flex items-center space-x-2.5">
+                      <i className="fa-solid fa-clock-rotate-left w-4 text-center shrink-0 text-amber-400"></i>
+                      {!sidebarCollapsed && <span>Closed Tenders</span>}
+                    </div>
+                    {!sidebarCollapsed && (
+                      <span className="bg-amber-500/10 text-amber-300 border border-amber-500/20 font-mono text-[9px] px-1.5 py-0.5 rounded-full font-bold">
+                        {closedTenders.length} Closed
+                      </span>
+                    )}
                   </button>
 
                   <button
@@ -1106,7 +1167,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                       <i className="fa-solid fa-folder-closed w-4 text-center shrink-0"></i>
                       {!sidebarCollapsed && <span>Applied Tenders</span>}
                     </div>
-                    {!sidebarCollapsed && <span className="bg-slate-800 text-slate-300 font-mono text-[9px] px-1.5 py-0.5 rounded-full">4</span>}
+                    {!sidebarCollapsed && <span className="bg-slate-800 text-slate-300 font-mono text-[9px] px-1.5 py-0.5 rounded-full">{myBids.length}</span>}
                   </button>
                 </div>
               </div>
@@ -1461,13 +1522,13 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                 {/* 7 Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                  <div onClick={() => handleSwitchTab('tenders-available')} className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 shadow hover:border-teal-500/40 transition cursor-pointer">
+                  <div onClick={() => { setTendersViewMode('available'); handleSwitchTab('tenders-available'); }} className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 shadow hover:border-teal-500/40 transition cursor-pointer">
                     <div className="flex items-center justify-between text-slate-400">
                       <span className="text-[10px] font-semibold uppercase tracking-wider">Available</span>
                       <i className="fa-solid fa-list-check text-teal-400 text-xs"></i>
                     </div>
                     <div className="mt-2 flex items-baseline justify-between">
-                      <span className="text-xl font-extrabold text-white font-mono">06</span>
+                      <span className="text-xl font-extrabold text-white font-mono">{String(availableTenders.length).padStart(2, '0')}</span>
                       <span className="text-[9px] font-mono text-teal-400">Live</span>
                     </div>
                     <p className="text-[9px] text-slate-500 mt-1 truncate">Current opportunities</p>
@@ -1656,19 +1717,32 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-800/60 font-sans">
-                            {tenders.slice(0, 3).map(t => (
-                              <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                                <td className="p-2.5 font-mono text-teal-400 font-bold">{t.id}</td>
-                                <td className="p-2.5 font-semibold text-white">{t.title}</td>
-                                <td className="p-2.5 text-slate-300">{t.organization}</td>
-                                <td className="p-2.5 font-mono text-amber-400 font-bold">{t.closingDate}</td>
-                                <td className="p-2.5"><span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[10px] font-bold font-mono">{t.status}</span></td>
-                                <td className="p-2.5 text-right space-x-1">
-                                  <button onClick={() => handleViewDetails(t)} className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">View</button>
-                                  <button onClick={() => handleApplyTender(t)} className="px-2 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded text-[10px] font-bold">Submit Bid</button>
+                            {availableTenders.length === 0 ? (
+                              <tr>
+                                <td colSpan="6" className="py-8 text-center text-slate-400 font-mono text-xs">
+                                  <i className="fa-solid fa-clock-rotate-left mr-2 text-amber-400"></i>
+                                  No active tenders currently open. All prior deadlines have concluded. Check <button onClick={() => { setTendersViewMode('closed'); handleSwitchTab('tenders-closed'); }} className="text-teal-400 underline font-bold cursor-pointer">Closed Tenders Archive</button> to view past listings.
                                 </td>
                               </tr>
-                            ))}
+                            ) : (
+                              availableTenders.slice(0, 3).map(t => (
+                                <tr key={t.id} className="hover:bg-slate-800/40 transition">
+                                  <td className="p-2.5 font-mono text-teal-400 font-bold">{t.id}</td>
+                                  <td className="p-2.5 font-semibold text-white">{t.title}</td>
+                                  <td className="p-2.5 text-slate-300">{t.organization}</td>
+                                  <td className="p-2.5 font-mono text-amber-400 font-bold">{t.closingDate}</td>
+                                  <td className="p-2.5"><span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-bold font-mono">LIVE</span></td>
+                                  <td className="p-2.5 text-right space-x-1">
+                                    <button onClick={() => handleViewDetails(t)} className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">View</button>
+                                    {myBids.some(b => b.tenderId === t.id) ? (
+                                      <button onClick={() => handleSwitchTab('bidding-my-bids')} className="px-2 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded text-[10px] font-bold">Applied</button>
+                                    ) : (
+                                      <button onClick={() => handleApplyTender(t)} className="px-2 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded text-[10px] font-bold">Submit Bid</button>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -1680,19 +1754,72 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               </div>
             )}
 
-            {/* TAB 2: AVAILABLE TENDERS */}
-            {activeTab === 'tenders-available' && (
+            {/* TAB 2 & CLOSED TENDERS TAB */}
+            {(activeTab === 'tenders-available' || activeTab === 'tenders-closed') && (
               <div className="space-y-6">
                 <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-5 shadow-xl">
 
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
                     <div>
-                      <h2 className="text-lg font-bold text-white">Available Tenders Directory</h2>
-                      <p className="text-xs text-slate-400">Filter and apply to active tenders requesting Zero-Knowledge eligibility range proofs</p>
+                      <div className="flex items-center space-x-3 mb-1">
+                        <h2 className="text-lg font-bold text-white">
+                          {tendersViewMode === 'available' ? 'Available Tenders Directory' : 'Closed & Past Tenders Archive'}
+                        </h2>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                          tendersViewMode === 'available'
+                            ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        }`}>
+                          {tendersViewMode === 'available' ? `${availableTenders.length} Open for Bidding` : `${closedTenders.length} Deadline Concluded`}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        {tendersViewMode === 'available'
+                          ? 'Filter and apply to active tenders requesting Zero-Knowledge eligibility range proofs'
+                          : 'Tenders whose submission deadline has expired. Bidding is closed; records preserved for cryptographic verification.'}
+                      </p>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-mono text-slate-400"><span className="font-bold text-white">{filteredTenders.length}</span> Active Listings</span>
-                      <button onClick={resetFilters} className="text-xs text-teal-400 hover:underline ml-2">Reset Filters</button>
+
+                    <div className="flex items-center space-x-3 flex-wrap gap-y-2">
+                      {/* Sub-View Switcher: Available Tenders vs Closed Tenders */}
+                      <div className="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl space-x-1 shadow-inner">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTendersViewMode('available');
+                            if (activeTab === 'tenders-closed') setActiveTab('tenders-available');
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-2 cursor-pointer ${
+                            tendersViewMode === 'available'
+                              ? 'bg-teal-600 text-white shadow'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                          <span>Available Tenders ({availableTenders.length})</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTendersViewMode('closed');
+                            if (activeTab === 'tenders-available') setActiveTab('tenders-closed');
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-2 cursor-pointer ${
+                            tendersViewMode === 'closed'
+                              ? 'bg-amber-600/30 text-amber-200 border border-amber-500/40 shadow'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <i className="fa-solid fa-clock-rotate-left text-[11px] text-amber-400"></i>
+                          <span>Closed Tenders ({closedTenders.length})</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-mono text-slate-400"><span className="font-bold text-white">{filteredTenders.length}</span> Filtered</span>
+                        <button onClick={resetFilters} className="text-xs text-teal-400 hover:underline ml-2">Reset Filters</button>
+                      </div>
                     </div>
                   </div>
 
@@ -1820,50 +1947,111 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
 
                 {/* Tender Cards Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredTenders.map(t => {
-                    const isEligible = t.eligibility === 'ELIGIBLE';
-                    return (
-                      <div key={t.id} className="bg-slate-900/90 rounded-xl border border-slate-800 p-4 shadow-xl flex flex-col justify-between hover:border-teal-500/40 transition space-y-3">
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono text-xs font-bold text-teal-400">{t.id}</span>
-                            <span className="px-2 py-0.5 text-[9px] font-mono rounded font-bold bg-teal-500/20 text-teal-300">{t.status}</span>
-                          </div>
-                          <h3 className="font-bold text-white text-sm mt-1.5 line-clamp-1" title={t.title}>{t.title}</h3>
-                          <p className="text-[11px] text-slate-400 mt-0.5"><i className="fa-solid fa-building mr-1"></i>{t.organization}</p>
-                          <p className="text-xs text-slate-300 mt-2 line-clamp-2">{t.description}</p>
-                        </div>
+                  {filteredTenders.length === 0 ? (
+                    <div className="col-span-full py-12 text-center space-y-3 bg-slate-950/60 rounded-xl border border-slate-800/80">
+                      <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-500 text-lg">
+                        <i className={tendersViewMode === 'available' ? 'fa-solid fa-folder-open' : 'fa-solid fa-clock-rotate-left'}></i>
+                      </div>
+                      <h3 className="text-sm font-bold text-white">
+                        {tendersViewMode === 'available'
+                          ? 'No Available Tenders Match Your Criteria'
+                          : 'No Closed Tenders Found'}
+                      </h3>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto">
+                        {tendersViewMode === 'available'
+                          ? (availableTenders.length === 0
+                              ? 'All current tenders have passed their submission deadlines and have been moved to the Closed Tenders archive.'
+                              : 'Try adjusting your search query, category, or budget filters to discover open opportunities.')
+                          : 'No past or expired tenders match the selected filters.'}
+                      </p>
+                      {tendersViewMode === 'available' && closedTenders.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => { setTendersViewMode('closed'); setActiveTab('tenders-closed'); }}
+                          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold inline-flex items-center space-x-2 cursor-pointer shadow"
+                        >
+                          <i className="fa-solid fa-clock-rotate-left text-amber-400"></i>
+                          <span>View Closed Tenders Archive ({closedTenders.length}) &rarr;</span>
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    filteredTenders.map(t => {
+                      const isOver = isTenderDeadlineOver(t);
+                      const isEligible = t.eligibility === 'ELIGIBLE';
+                      const isApplied = myBids.some(b => b.tenderId === t.id);
 
-                        <div className="pt-2 border-t border-slate-800/80 space-y-2">
-                          <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-                            <div><span className="text-slate-500 block uppercase">Est. Budget:</span><span className="text-white font-bold">₹{(t.budget).toLocaleString('en-IN')}</span></div>
-                            <div><span className="text-slate-500 block uppercase">Deadline:</span><span className="text-amber-400 font-bold">{t.closingDate}</span></div>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-1">
-                            <span className={`inline-flex items-center text-[9px] font-mono px-2 py-0.5 rounded ${isEligible ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
-                              <i className={`fa-solid ${isEligible ? 'fa-circle-check' : 'fa-circle-xmark'} mr-1`}></i> {t.eligibility}
-                            </span>
-                            <div className="space-x-1">
-                              <button onClick={() => handleViewDetails(t)} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs">Details</button>
-                              {myBids.some(b => b.tenderId === t.id) ? (
-                                <button
-                                  onClick={() => handleSwitchTab('bidding-my-bids')}
-                                  className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold rounded text-xs shadow inline-flex items-center space-x-1 cursor-pointer"
-                                  title="You have already submitted a sealed bid for this tender"
-                                >
-                                  <i className="fa-solid fa-check text-[10px]"></i>
-                                  <span>Applied</span>
-                                </button>
+                      return (
+                        <div key={t.id} className={`bg-slate-900/90 rounded-xl border ${isOver ? 'border-amber-500/20 bg-slate-900/70' : 'border-slate-800 hover:border-teal-500/40'} p-4 shadow-xl flex flex-col justify-between transition space-y-3`}>
+                          <div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-mono text-xs font-bold text-teal-400">{t.id}</span>
+                              {isOver ? (
+                                <span className="px-2 py-0.5 text-[9px] font-mono rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center space-x-1">
+                                  <i className="fa-solid fa-lock text-[8px]"></i>
+                                  <span>DEADLINE OVER</span>
+                                </span>
                               ) : (
-                                <button onClick={() => handleApplyTender(t)} className="px-2.5 py-1 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded text-xs shadow">Apply</button>
+                                <span className="px-2 py-0.5 text-[9px] font-mono rounded font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                  ACTIVE
+                                </span>
                               )}
+                            </div>
+                            <h3 className="font-bold text-white text-sm mt-1.5 line-clamp-1" title={t.title}>{t.title}</h3>
+                            <p className="text-[11px] text-slate-400 mt-0.5"><i className="fa-solid fa-building mr-1"></i>{t.organization}</p>
+                            <p className="text-xs text-slate-300 mt-2 line-clamp-2">{t.description}</p>
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                              <div><span className="text-slate-500 block uppercase">Est. Budget:</span><span className="text-white font-bold">₹{(t.budget).toLocaleString('en-IN')}</span></div>
+                              <div>
+                                <span className="text-slate-500 block uppercase">Deadline:</span>
+                                <span className={`font-bold ${isOver ? 'text-rose-400 line-through' : 'text-amber-400'}`}>{t.closingDate}</span>
+                              </div>
+                            </div>
+
+                            {isOver && (
+                              <div className="p-1.5 bg-amber-500/10 border border-amber-500/20 rounded text-[10px] text-amber-300 font-mono flex items-center space-x-1.5">
+                                <i className="fa-solid fa-triangle-exclamation text-amber-400 shrink-0"></i>
+                                <span>Bidding closed on {t.closingDate}</span>
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between pt-1">
+                              <span className={`inline-flex items-center text-[9px] font-mono px-2 py-0.5 rounded ${isEligible ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                                <i className={`fa-solid ${isEligible ? 'fa-circle-check' : 'fa-circle-xmark'} mr-1`}></i> {t.eligibility}
+                              </span>
+                              <div className="space-x-1">
+                                <button onClick={() => handleViewDetails(t)} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs">Details</button>
+                                {isApplied ? (
+                                  <button
+                                    onClick={() => handleSwitchTab('bidding-my-bids')}
+                                    className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold rounded text-xs shadow inline-flex items-center space-x-1 cursor-pointer"
+                                    title="You have already submitted a sealed bid for this tender"
+                                  >
+                                    <i className="fa-solid fa-check text-[10px]"></i>
+                                    <span>Applied</span>
+                                  </button>
+                                ) : isOver ? (
+                                  <button
+                                    disabled
+                                    className="px-2.5 py-1 bg-slate-800/60 text-slate-500 border border-slate-700/40 font-medium rounded text-xs cursor-not-allowed inline-flex items-center space-x-1"
+                                    title="Deadline has ended. Bidding is closed."
+                                  >
+                                    <i className="fa-solid fa-lock text-[9px]"></i>
+                                    <span>Closed</span>
+                                  </button>
+                                ) : (
+                                  <button onClick={() => handleApplyTender(t)} className="px-2.5 py-1 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded text-xs shadow">Apply</button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </div>
             )}
@@ -2041,6 +2229,11 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                           <span>Already Applied (View in My Bids)</span>
                           <i className="fa-solid fa-arrow-right"></i>
                         </button>
+                      ) : isTenderDeadlineOver(activeTender) ? (
+                        <div className="px-6 py-2.5 bg-amber-500/10 text-amber-300 border border-amber-500/30 font-semibold text-xs rounded-xl flex items-center space-x-2">
+                          <i className="fa-solid fa-lock"></i>
+                          <span>Deadline Ended ({activeTender.closingDate}) — Bidding is Closed</span>
+                        </div>
                       ) : (
                         <button onClick={() => handleApplyTender(activeTender)} className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-teal-600/30 transition flex items-center space-x-2">
                           <span>Apply for Tender Now</span>

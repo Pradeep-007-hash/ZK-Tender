@@ -389,7 +389,7 @@ The frontend dev server will launch on `http://localhost:3000`.
 
 ---
 
-## 🔐 Environment Variables Configuration
+<!-- ## 🔐 Environment Variables Configuration
 
 ### 1. Root `.env` (`/ZK-Tender/.env`)
 Used by Hardhat and root deployment scripts:
@@ -431,7 +431,7 @@ VITE_GOOGLE_CLIENT_SECRET=your_google_client_secret
 VITE_GOOGLE_PROJECT_ID=zk-tender
 VITE_GOOGLE_REDIRECT_URI_1=https://developers.google.com/oauthplayground
 VITE_GOOGLE_REDIRECT_URI_2=http://localhost:5000/auth/google/callback
-```
+``` -->
 
 ---
 

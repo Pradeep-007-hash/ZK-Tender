@@ -5,6 +5,7 @@ import {
   Key, FileText, CheckCircle, XCircle, ShieldAlert, BadgeCheck
 } from 'lucide-react';
 import { verifyMldsaSignature, fetchAuthorityPublicKey } from '../services/mldsaClientService';
+import { isTenderDeadlineOver, formatDeadlineDisplay, getTenderTimeRemaining } from '../utils/tenderDateUtils';
 
 export default function VendorBidPage({ 
   targetTender, 
@@ -22,6 +23,10 @@ export default function VendorBidPage({
   const resolvedVendorName = (vendorName && String(vendorName).trim() !== '') ? vendorName : (currentUser?.company || currentUser?.name || 'ABC Constructions Pvt Ltd');
   const tenderId = targetTender?.id || targetTender?.tenderId || 'TND-2026-1001';
   const tenderTitle = targetTender?.title || 'Modernization & Digital Infrastructure Upgrade';
+
+  const tenderDeadlineRaw = targetTender?.submissionDeadline || targetTender?.closingDate || targetTender?.deadline;
+  const isDeadlineOver = isTenderDeadlineOver(tenderDeadlineRaw);
+  const deadlineRemaining = getTenderTimeRemaining(tenderDeadlineRaw);
 
   // 5-Step VC-Based ZKP Application Wizard
   // 1: Tender Requirements
@@ -628,6 +633,11 @@ export default function VendorBidPage({
   // STEP 5: Final Electronic Bid Submission
   // -------------------------------------------------------------
   const handleSubmitFinalBid = async () => {
+    if (isDeadlineOver) {
+      if (onToast) onToast('Cannot submit bid: Tender submission deadline has expired.', 'error');
+      return;
+    }
+
     if (!declarationChecked) {
       if (onToast) onToast('Please confirm the legal accuracy declaration before submitting.', 'warning');
       return;
@@ -705,6 +715,24 @@ export default function VendorBidPage({
             </span>
           </div>
         </div>
+
+        {/* DEADLINE EXPIRED WARNING BANNER */}
+        {isDeadlineOver && (
+          <div className="p-4 bg-rose-500/15 border border-rose-500/40 rounded-xl flex items-start gap-3 text-rose-300 animate-fade-in">
+            <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-rose-200 uppercase tracking-wide">Tender Submission Deadline Has Expired</span>
+                <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded font-mono text-[10px] border border-rose-500/30">
+                  Closed on {formatDeadlineDisplay(tenderDeadlineRaw)}
+                </span>
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                The official deadline to submit bids for this tender has concluded. Under public procurement regulations, this tender is closed and new electronic bids or ZKP proofs can no longer be accepted.
+              </p>
+            </div>
+          </div>
+        )}
 
         {loadingPolicy ? (
           <div className="py-12 text-center space-y-3 font-mono">
@@ -1199,10 +1227,24 @@ export default function VendorBidPage({
                 {wizardStep === 1 && (
                   <button
                     type="button"
-                    onClick={() => setWizardStep(2)}
-                    className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5 transition"
+                    disabled={isDeadlineOver}
+                    onClick={() => !isDeadlineOver && setWizardStep(2)}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5 transition ${
+                      isDeadlineOver
+                        ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                        : 'bg-teal-600 hover:bg-teal-500 text-white cursor-pointer'
+                    }`}
                   >
-                    Proceed to VC Verification <ArrowRight size={14} />
+                    {isDeadlineOver ? (
+                      <>
+                        <ShieldAlert size={14} className="text-rose-400" />
+                        <span>Tender Closed (Deadline Expired)</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Proceed to VC Verification</span> <ArrowRight size={14} />
+                      </>
+                    )}
                   </button>
                 )}
 
@@ -1254,10 +1296,10 @@ export default function VendorBidPage({
                 {wizardStep === 5 && (
                   <button
                     type="button"
-                    disabled={isSubmittingBid || !declarationChecked}
+                    disabled={isSubmittingBid || !declarationChecked || isDeadlineOver}
                     onClick={handleSubmitFinalBid}
                     className={`px-6 py-2.5 rounded-xl text-xs font-bold shadow-xl flex items-center gap-2 transition ${
-                      declarationChecked && !isSubmittingBid
+                      declarationChecked && !isSubmittingBid && !isDeadlineOver
                         ? 'bg-teal-600 hover:bg-teal-500 text-white cursor-pointer'
                         : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                     }`}
@@ -1266,6 +1308,11 @@ export default function VendorBidPage({
                       <>
                         <RefreshCw size={15} className="animate-spin" />
                         <span>Encrypting & Registering Bid...</span>
+                      </>
+                    ) : isDeadlineOver ? (
+                      <>
+                        <ShieldAlert size={15} className="text-rose-400" />
+                        <span>Submission Closed (Deadline Expired)</span>
                       </>
                     ) : (
                       <>

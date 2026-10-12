@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import CreateTenderForm from './CreateTenderForm';
 import WalletConnectButton from './WalletConnectButton';
 import TenderEvaluationDetail from './TenderEvaluationDetail';
+import { isTenderDeadlineOver, formatDeadlineDisplay } from '../utils/tenderDateUtils';
 
 const initialBlockchainBlocks = [
   {
@@ -174,27 +175,37 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
         const res = await fetch('http://localhost:5000/api/tenders');
         const data = await res.json();
         if (data.success && Array.isArray(data.tenders) && data.tenders.length > 0) {
-          const formattedDbTenders = data.tenders.map(t => ({
-            id: t.tenderId,
-            title: t.title,
-            department: t.department || 'Dept of Urban Tech',
-            category: t.category || 'Infrastructure',
-            tenderType: t.tenderType || 'E-Tender',
-            method: t.procurementMethod || 'Competitive Bidding',
-            budget: t.estimatedValue || 0,
-            pubDate: t.pubDate || 'Today',
-            closingDate: t.submissionDeadline || t.closingDate || '30 Sep 2026',
-            status: t.status === 'Draft' ? 'Draft' : 'Active',
-            bidsCount: t.tenderId === 'TND-2026-6868' ? (t.bidsCount || 4) : (t.bidsCount || 0),
-            zkpRule: t.zkpRule || 'Revenue ≥ ₹1,00,00,000 (Groth16 Range Proof)',
-            description: t.executiveSummary || t.detailedScope || t.description || 'Public tender specification'
-          }));
+          const formattedDbTenders = data.tenders.map(t => {
+            const rawClosingDate = t.submissionDeadline || t.closingDate || '30 Sep 2026';
+            const deadlinePassed = t.isDeadlineOver || isTenderDeadlineOver(rawClosingDate);
+            return {
+              id: t.tenderId,
+              title: t.title,
+              department: t.department || 'Dept of Urban Tech',
+              category: t.category || 'Infrastructure',
+              tenderType: t.tenderType || 'E-Tender',
+              method: t.procurementMethod || 'Competitive Bidding',
+              budget: t.estimatedValue || 0,
+              pubDate: t.pubDate || 'Today',
+              closingDate: rawClosingDate,
+              status: deadlinePassed ? 'Closed' : (t.status === 'Draft' ? 'Draft' : (t.status || 'Active')),
+              isDeadlineOver: deadlinePassed,
+              bidsCount: t.tenderId === 'TND-2026-6868' ? (t.bidsCount || 4) : (t.bidsCount || 0),
+              zkpRule: t.zkpRule || 'Revenue ≥ ₹1,00,00,000 (Groth16 Range Proof)',
+              description: t.executiveSummary || t.detailedScope || t.description || 'Public tender specification'
+            };
+          });
 
           const existingIds = new Set(formattedDbTenders.map(t => t.id));
           const merged = [...formattedDbTenders];
           defaultActiveTenders.forEach(defT => {
             if (!existingIds.has(defT.id)) {
-              merged.push(defT);
+              const defDeadlinePassed = isTenderDeadlineOver(defT.closingDate);
+              merged.push({
+                ...defT,
+                status: defDeadlinePassed ? 'Closed' : defT.status,
+                isDeadlineOver: defDeadlinePassed
+              });
             }
           });
           // Ensure TND-2026-6868 is always prioritized first
@@ -448,9 +459,9 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
   });
 
   const concludedTenders = tenders.filter(t => {
+    if (t.isDeadlineOver || isTenderDeadlineOver(t.closingDate)) return true;
     if (t.id === 'TND-2026-6868') return true;
-    if (t.closingDate && (t.closingDate.includes('Sep') || t.closingDate.includes('05 Oct'))) return true;
-    if (t.status === 'Concluded' || t.status === 'Completed' || t.status === 'Under Evaluation') return true;
+    if (t.status === 'Closed' || t.status === 'Concluded' || t.status === 'Completed' || t.status === 'Under Evaluation' || t.status === 'Awarded') return true;
     return false;
   });
   const displayConcludedTenders = concludedTenders.length > 0 ? concludedTenders : (tenders.length > 0 ? [tenders[0]] : defaultActiveTenders.slice(0, 1));
@@ -831,7 +842,13 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
                               </span>
                             )}
                             <span className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[10px] rounded font-mono">{t.tenderType}</span>
-                            <span className="px-2 py-0.5 bg-teal-500/20 text-teal-300 text-[10px] rounded font-mono font-bold">{t.status}</span>
+                            <span className={`px-2 py-0.5 text-[10px] rounded font-mono font-bold ${
+                              t.status === 'Closed' || t.isDeadlineOver || isTenderDeadlineOver(t.closingDate)
+                                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                : 'bg-teal-500/20 text-teal-300'
+                            }`}>
+                              {t.status === 'Closed' || t.isDeadlineOver || isTenderDeadlineOver(t.closingDate) ? 'Closed' : t.status}
+                            </span>
                           </div>
                           <h4 className="font-bold text-white text-sm">{t.title}</h4>
                           <p className="text-slate-400 text-xs font-mono">Budget: ₹{t.budget.toLocaleString('en-IN')} | Department: {t.department}</p>
@@ -913,6 +930,7 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
                         <option value="ALL">All Statuses</option>
                         <option value="Active">Active</option>
                         <option value="Open">Open</option>
+                        <option value="Closed">Closed (Deadline Over)</option>
                         <option value="Closing Soon">Closing Soon</option>
                         <option value="Under Evaluation">Under Evaluation</option>
                         <option value="Awarded">Awarded</option>
@@ -978,6 +996,7 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
                               >
                                 <option value="Active">🔵 Active</option>
                                 <option value="Open">🟢 Open</option>
+                                <option value="Closed">🔴 Closed (Deadline Passed)</option>
                                 <option value="Closing Soon">🟠 Closing Soon</option>
                                 <option value="Under Evaluation">🟣 Under Evaluation</option>
                                 <option value="Awarded">🏆 Awarded</option>

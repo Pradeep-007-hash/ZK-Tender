@@ -143,20 +143,88 @@ exports.createTender = async (req, res) => {
   }
 };
 
+// Helper to determine if a tender deadline has passed
+function isTenderExpired(tender) {
+  if (!tender) return false;
+  const statusUpper = String(tender.status || '').toUpperCase();
+  if (['CLOSED', 'CANCELLED', 'AWARDED', 'UNDER EVALUATION', 'DEADLINE OVER'].includes(statusUpper)) {
+    return true;
+  }
+  const deadlineStr = tender.submissionDeadline || tender.closingDate || tender.bidDeadline;
+  if (!deadlineStr) return false;
+  let deadlineTime = null;
+  if (typeof deadlineStr === 'number') {
+    deadlineTime = deadlineStr < 1e11 ? deadlineStr * 1000 : deadlineStr;
+  } else {
+    const str = String(deadlineStr).trim();
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+      if (!str.includes(':')) {
+        parsed.setHours(23, 59, 59, 999);
+      }
+      deadlineTime = parsed.getTime();
+    } else {
+      const match = str.match(/^(\d{1,2})[\s\-\/]([A-Za-z]{3,9}|\d{1,2})[\s\-\/](\d{4})/);
+      if (match) {
+        const day = parseInt(match[1], 10);
+        const monthStr = match[2];
+        const year = parseInt(match[3], 10);
+        const months = {
+          jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+          apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6,
+          aug: 7, august: 7, sep: 8, september: 8, oct: 9, october: 9,
+          nov: 10, november: 10, dec: 11, december: 11
+        };
+        const month = isNaN(monthStr) ? months[monthStr.toLowerCase()] : parseInt(monthStr, 10) - 1;
+        if (month !== undefined && month >= 0 && month <= 11) {
+          const d = new Date(year, month, day, 23, 59, 59, 999);
+          if (!isNaN(d.getTime())) deadlineTime = d.getTime();
+        }
+      }
+    }
+  }
+  if (!deadlineTime) return false;
+  return Date.now() > deadlineTime;
+}
+
 // 2. Fetch All Tenders from MongoDB
 exports.getAllTenders = async (req, res) => {
   try {
-    const { role, includeDrafts } = req.query;
+    const { role, includeDrafts, availableOnly } = req.query;
     let filter = {};
     if (includeDrafts === 'false' || role === 'vendor') {
       filter.status = { $nin: ["Draft", "draft", "DRAFT"] };
     }
 
     const tenders = await Tender.find(filter).sort({ createdAt: -1 });
+
+    const processedTenders = await Promise.all(tenders.map(async (tenderDoc) => {
+      const t = tenderDoc.toObject();
+      const expired = isTenderExpired(t);
+
+      if (expired) {
+        t.isDeadlineOver = true;
+        const currentUpper = String(t.status || '').toUpperCase();
+        if (!['CLOSED', 'AWARDED', 'CANCELLED', 'UNDER EVALUATION'].includes(currentUpper)) {
+          t.status = 'Closed';
+          // Asynchronously update MongoDB document status
+          tenderDoc.status = 'Closed';
+          await tenderDoc.save().catch(e => console.warn('[AUTO CLOSE TENDER NOTICE]', e.message));
+        }
+      } else {
+        t.isDeadlineOver = false;
+      }
+      return t;
+    }));
+
+    const finalTenders = (availableOnly === 'true')
+      ? processedTenders.filter(t => !t.isDeadlineOver)
+      : processedTenders;
+
     return res.status(200).json({
       success: true,
-      count: tenders.length,
-      tenders
+      count: finalTenders.length,
+      tenders: finalTenders
     });
   } catch (error) {
     console.error("[GET ALL TENDERS ERROR]", error);
@@ -571,6 +639,15 @@ exports.submitVendorBid = async (req, res) => {
     const tender = await Tender.findOne({ tenderId });
     if (!tender) {
       return res.status(404).json({ success: false, message: "Tender not found" });
+    }
+
+    // Enforce deadline check: reject bid submission if tender deadline has expired
+    if (isTenderExpired(tender)) {
+      return res.status(400).json({
+        success: false,
+        deadlineOver: true,
+        message: `Bid submission rejected: The deadline (${tender.submissionDeadline || tender.closingDate || 'Concluded'}) for Tender ${tenderId} has passed. Bidding is closed.`
+      });
     }
 
     // REQUIREMENT 14: Enforce that vendor has successfully completed eligibility ZKP verification
