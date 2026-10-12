@@ -187,7 +187,8 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
               method: t.procurementMethod || 'Competitive Bidding',
               budget: t.estimatedValue || 0,
               pubDate: t.pubDate || 'Today',
-              closingDate: rawClosingDate,
+              closingDate: formatDeadlineDisplay(rawClosingDate),
+              rawClosingDate: rawClosingDate,
               status: deadlinePassed ? 'Closed' : (t.status === 'Draft' ? 'Draft' : (t.status || 'Active')),
               isDeadlineOver: deadlinePassed,
               bidsCount: t.tenderId === 'TND-2026-6868' ? (t.bidsCount || 4) : (t.bidsCount || 0),
@@ -1008,7 +1009,7 @@ export default function AuthorityDashboard({ currentUser, onLogout, onToast }) {
 
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-slate-300 font-mono text-[11px]">
                             <div><span className="text-slate-500">Budget Ceiling:</span> <span className="text-white font-bold">₹{t.budget.toLocaleString('en-IN')}</span></div>
-                            <div><span className="text-slate-500">Deadline:</span> <span className="text-amber-400 font-bold">{t.closingDate}</span></div>
+                            <div><span className="text-slate-500">Deadline:</span> <span className="text-amber-400 font-bold">{formatDeadlineDisplay(t.closingDate)}</span></div>
                             <div><span className="text-slate-500">Sealed Bids:</span> <span className="text-teal-400 font-bold">{t.bidsCount} Received</span></div>
                           </div>
 

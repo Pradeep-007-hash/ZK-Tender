@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Radio, Building2, Clock, Sparkles, ExternalLink } from 'lucide-react';
+import { formatDeadlineDisplay } from '../utils/tenderDateUtils';
 
 const liveTenders = [
   {
@@ -118,7 +119,7 @@ export default function LiveFeed({ searchParams, onOpenDemo }) {
             status: t.status || "Live",
             category: (t.category || "psu").toLowerCase(),
             title: t.title,
-            closes: t.submissionDeadline || t.closingDate || "30 Sep 2026",
+            closes: formatDeadlineDisplay(t.submissionDeadline || t.closingDate || "30 Sep 2026"),
             daysLeft: "Active",
             value: t.estimatedValue ? `₹${(t.estimatedValue / 10000000).toFixed(2)} Cr` : "Refer Document",
             department: t.department || "Dept of Urban Tech",

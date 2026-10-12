@@ -23,11 +23,12 @@ import {
   Sparkles,
   AlertCircle
 } from 'lucide-react';
+import { formatDeadlineDisplay, isTenderDeadlineOver as checkDeadlineOver } from '../utils/tenderDateUtils';
 
 export default function TenderEvaluationDetail({ 
   tender, 
   allTenders = [], 
-  lightTheme = false,
+  lightTheme = false, 
   onBack, 
   onStatusUpdate, 
   onToast 
@@ -41,6 +42,8 @@ export default function TenderEvaluationDetail({
   // Section toggle: 'evaluation' (Winner Evaluation & MCDA) vs 'bidders' (Bidder List)
   const [activeSection, setActiveSection] = useState('evaluation');
 
+  const rawDeadline = tender?.closingDate || tender?.submissionDeadline || '30 Sep 2026';
+
   // Tender details state
   const [tenderData, setTenderData] = useState({
     tenderId: tenderId,
@@ -49,14 +52,14 @@ export default function TenderEvaluationDetail({
     category: tender?.category || 'IT & Engineering',
     tenderType: tender?.tenderType || 'Open Competitive Tender',
     budget: tender?.budget || 240000000,
-    submissionDeadline: tender?.closingDate || tender?.submissionDeadline || '30 Sep 2026',
+    submissionDeadline: formatDeadlineDisplay(rawDeadline),
     status: tender?.status || 'Active',
     bidsCount: tender?.bidsCount || 4,
     zkpRule: tender?.zkpRule || 'Revenue ≥ ₹1,00,00,000 (Groth16 Range Proof)'
   });
 
-  // Deadline status state (Tender deadline has concluded)
-  const [isDeadlineOver, setIsDeadlineOver] = useState(true);
+  // Deadline status state
+  const [isDeadlineOver, setIsDeadlineOver] = useState(() => checkDeadlineOver(rawDeadline));
 
   // Submitted Bids list
   const [bids, setBids] = useState([]);

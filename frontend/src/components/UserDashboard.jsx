@@ -7,7 +7,7 @@ import VendorDocumentSubmission from './VendorDocumentSubmission';
 import VendorBidStatusPage from './vendor/VendorBidStatusPage';
 import VendorEvaluationResultsPage from './vendor/VendorEvaluationResultsPage';
 import { useWallet } from '../hooks/useWallet';
-import { isTenderDeadlineOver, parseDeadlineDate, getTenderTimeRemaining } from '../utils/tenderDateUtils';
+import { isTenderDeadlineOver, parseDeadlineDate, getTenderTimeRemaining, formatDeadlineDisplay } from '../utils/tenderDateUtils';
 
 const indianStatesAndDistricts = {
   "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Kakinada", "Tirupati", "Anantapur", "Other"],
@@ -145,7 +145,8 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
               tenderType: t.tenderType || 'Open Tender',
               location: t.city ? `${t.city}, ${t.state}` : (t.state || 'Tamil Nadu, India'),
               pubDate: pubDateStr,
-              closingDate: t.submissionDeadline || t.closingDate || '30 Nov 2026',
+              closingDate: formatDeadlineDisplay(t.submissionDeadline || t.closingDate || t.bidDeadline || '30 Nov 2026'),
+              submissionDeadline: formatDeadlineDisplay(t.submissionDeadline || t.closingDate || t.bidDeadline || '30 Nov 2026'),
               rawClosingDate: t.submissionDeadline || t.closingDate || t.bidDeadline,
               budget: Number(t.estimatedValue || t.budget || 0),
               method: t.procurementMethod || t.method || 'Competitive Bidding',
@@ -1743,7 +1744,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                                   <td className="p-2.5 font-mono text-teal-400 font-bold">{t.id}</td>
                                   <td className="p-2.5 font-semibold text-white">{t.title}</td>
                                   <td className="p-2.5 text-slate-300">{t.organization}</td>
-                                  <td className="p-2.5 font-mono text-amber-400 font-bold">{t.closingDate}</td>
+                                  <td className="p-2.5 font-mono text-amber-400 font-bold">{formatDeadlineDisplay(t.closingDate)}</td>
                                   <td className="p-2.5"><span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-bold font-mono">LIVE</span></td>
                                   <td className="p-2.5 text-right space-x-1">
                                     <button onClick={() => handleViewDetails(t)} className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">View</button>
@@ -2019,14 +2020,14 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                               <div><span className="text-slate-500 block uppercase">Est. Budget:</span><span className="text-white font-bold">₹{(t.budget).toLocaleString('en-IN')}</span></div>
                               <div>
                                 <span className="text-slate-500 block uppercase">Deadline:</span>
-                                <span className={`font-bold ${isOver ? 'text-rose-400 line-through' : 'text-amber-400'}`}>{t.closingDate}</span>
+                                <span className={`font-bold ${isOver ? 'text-rose-400 line-through' : 'text-amber-400'}`}>{formatDeadlineDisplay(t.closingDate)}</span>
                               </div>
                             </div>
 
                             {isOver && (
                               <div className="p-1.5 bg-amber-500/10 border border-amber-500/20 rounded text-[10px] text-amber-300 font-mono flex items-center space-x-1.5">
                                 <i className="fa-solid fa-triangle-exclamation text-amber-400 shrink-0"></i>
-                                <span>Bidding closed on {t.closingDate}</span>
+                                <span>Bidding closed on {formatDeadlineDisplay(t.closingDate)}</span>
                               </div>
                             )}
 
@@ -2174,7 +2175,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                       </div>
                       <div>
                         <span className="text-slate-500 block text-[10px] uppercase">Submission Deadline</span>
-                        <span className="font-bold text-amber-400 text-sm">{activeTender.closingDate}</span>
+                        <span className="font-bold text-amber-400 text-sm">{formatDeadlineDisplay(activeTender.closingDate)}</span>
                       </div>
                       <div>
                         <span className="text-slate-500 block text-[10px] uppercase">Evaluation Method</span>
@@ -2276,7 +2277,7 @@ export default function UserDashboard({ currentUser, onLogout, onToast }) {
                       ) : isTenderDeadlineOver(activeTender) ? (
                         <div className="px-6 py-2.5 bg-amber-500/10 text-amber-300 border border-amber-500/30 font-semibold text-xs rounded-xl flex items-center space-x-2">
                           <i className="fa-solid fa-lock"></i>
-                          <span>Deadline Ended ({activeTender.closingDate}) — Bidding is Closed</span>
+                          <span>Deadline Ended ({formatDeadlineDisplay(activeTender.closingDate)}) — Bidding is Closed</span>
                         </div>
                       ) : (
                         <button onClick={() => handleApplyTender(activeTender)} className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-teal-600/30 transition flex items-center space-x-2">

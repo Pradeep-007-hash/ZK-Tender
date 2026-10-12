@@ -93,7 +93,9 @@ export function formatDeadlineDisplay(dateVal) {
     dateVal = dateVal.submissionDeadline || dateVal.closingDate || dateVal.rawClosingDate || dateVal.deadline;
   }
   const timestamp = parseDeadlineDate(dateVal);
-  if (!timestamp) return String(dateVal);
+  if (!timestamp) {
+    return String(dateVal).replace(/T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/gi, '').trim() || String(dateVal);
+  }
   return new Date(timestamp).toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
