@@ -48,31 +48,31 @@ function getTenderEligibilityCriteria(tender) {
     const budget = Number(tender.estimatedValue || tender.budget || 50000000);
     
     // Tiered benchmarks based on project scale (Budget in INR)
-    if (budget >= 2000000000) {        // ≥ ₹200 Cr (Mega Infrastructure / AI Data Center)
-      minExp = minExp ?? 8;
-      minTurn = minTurn ?? 22;
-      minProj = minProj ?? 5;
-    } else if (budget >= 1000000000) { // ≥ ₹100 Cr (Large Transport / Metro Fleet)
-      minExp = minExp ?? 7;
-      minTurn = minTurn ?? 18;
-      minProj = minProj ?? 4;
-    } else if (budget >= 400000000) {  // ≥ ₹40 Cr (Highway / Diagnostic MRI / Sewage)
-      minExp = minExp ?? 6;
-      minTurn = minTurn ?? 14;
-      minProj = minProj ?? 4;
-    } else if (budget >= 200000000) {  // ≥ ₹20 Cr (Clean Energy / Bio-Methanation)
-      minExp = minExp ?? 5;
-      minTurn = minTurn ?? 8;
-      minProj = minProj ?? 3;
-    } else if (budget >= 50000000) {   // ≥ ₹5 Cr (Identity Portal / Urban Tech)
-      minExp = minExp ?? 4;
-      minTurn = minTurn ?? 4.5;
-      minProj = minProj ?? 3;
-    } else {                            // < ₹5 Cr (Smart City Consultancy / Agritech Drones)
-      minExp = minExp ?? 2;
-      minTurn = minTurn ?? 1.5;
-      minProj = minProj ?? 2;
-    }
+    // if (budget >= 2000000000) {        // ≥ ₹200 Cr (Mega Infrastructure / AI Data Center)
+    //   minExp = minExp ?? 8;
+    //   minTurn = minTurn ?? 22;
+    //   minProj = minProj ?? 5;
+    // } else if (budget >= 1000000000) { // ≥ ₹100 Cr (Large Transport / Metro Fleet)
+    //   minExp = minExp ?? 7;
+    //   minTurn = minTurn ?? 18;
+    //   minProj = minProj ?? 4;
+    // } else if (budget >= 400000000) {  // ≥ ₹40 Cr (Highway / Diagnostic MRI / Sewage)
+    //   minExp = minExp ?? 6;
+    //   minTurn = minTurn ?? 14;
+    //   minProj = minProj ?? 4;
+    // } else if (budget >= 200000000) {  // ≥ ₹20 Cr (Clean Energy / Bio-Methanation)
+    //   minExp = minExp ?? 5;
+    //   minTurn = minTurn ?? 8;
+    //   minProj = minProj ?? 3;
+    // } else if (budget >= 50000000) {   // ≥ ₹5 Cr (Identity Portal / Urban Tech)
+    //   minExp = minExp ?? 4;
+    //   minTurn = minTurn ?? 4.5;
+    //   minProj = minProj ?? 3;
+    // } else {                            // < ₹5 Cr (Smart City Consultancy / Agritech Drones)
+    //   minExp = minExp ?? 2;
+    //   minTurn = minTurn ?? 1.5;
+    //   minProj = minProj ?? 2;
+    // }
 
     // Add deterministic pseudo-variance based on tenderId char codes so tenders don't collide
     let idHash = 0;
